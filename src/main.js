@@ -6,8 +6,9 @@ class Camera {
 }
 
 class FSM {
-    constructor (states, camera, pool, width, height) {
+    constructor (states, game, camera, pool, width, height) {
         this.states = states;
+        this.game = game;
         this.camera = camera;
         this.pool = pool;
         this.width = width;
@@ -21,6 +22,7 @@ class FSM {
 
         this.state = this.states[name];
         
+        this.state.game = this.game;
         this.state.camera = this.camera
         this.state.pool = this.pool;
         this.state.fsm = this;
@@ -269,18 +271,28 @@ class Ticker {
         this.callback = callback;
         this.then = Date.now();
         this.update = this.update.bind(this);
+        this.cancelled = false
 
-        requestAnimationFrame(this.update);
+        this.update();
     }
-    
+
     update () {
+        if (this.cancelled) {
+            return;
+        }
+
         let now = Date.now();
-        let delta = Math.min(now - this.then, 64);
+        let delta = Math.min(now - this.then, 32);
 
         this.callback(delta);
         this.then = now;    
-        
-        requestAnimationFrame(this.update);
+
+        this.requestId = requestAnimationFrame(this.update);
+    }
+
+    destroy () {
+        this.cancelled = true;
+        cancelAnimationFrame(this.requestId);
     }
 }
 
@@ -395,36 +407,59 @@ class Game {
             preload: []
         };
 
-        options = Object.assign(defaults, options);
+        this.states = states;
+        this.options = Object.assign(defaults, options);
+        this.hasBooted = false;
 
+        this.boot();
+    }
+
+    boot () {
+        // psuedo game object
+        this.game = {
+            reset: this.boot.bind(this)
+        };
         this.camera = new Camera();
         this.pool = new Pool();
         this.viewport = new Viewport(
-            options.width, options.height, options.id
+            this.options.width, this.options.height, this.options.id
         );
         this.fsm = new FSM(
-            states, this.camera, this.pool, options.width, options.height
+            this.states, this.game, this.camera, this.pool, this.options.width, this.options.height
         );
+
+        if (this.hasBooted) {
+            this.ticker.destroy();
+        }
+
         this.ticker = new Ticker(this.update.bind(this));
 
-        if (options.preload.length) {
-            new Preloader(options.preload, ()=> {
+        if (!this.hasBooted && this.options.preload.length) {
+            new Preloader(this.options.preload, ()=> {
                 this.fsm.load("initial");
             });
         } else {
             this.fsm.load("initial");
         }
+
+        this.hasBooted = true;
     }
 
     update (delta) {
+        if (!this.fsm.state) {
+            return;
+        }
+
         this.viewport.clear(this.fsm.state.bgColor);
         this.viewport.context.save();
         this.viewport.context.translate(-this.camera.x, -this.camera.y);
 
         this.fsm.state.update(delta);
         this.fsm.state.pool.each(item=> {
+            this.viewport.context.save();
             item.render(this.viewport.context);
-        });
+            this.viewport.context.restore();
+        }, this);
 
         this.viewport.context.restore();
     }
@@ -440,8 +475,8 @@ new Game({
             this.rect.pivotX = 32;
             this.rect.pivotY = 32;
             this.rect.rotation = 45;
-            this.rect.scaleX = 4;
-            this.rect.scaleY = 4;
+            this.rect.scaleX = 2;
+            this.rect.scaleY = 2;
             this.pool.add(this.rect);
         },
         update (delta) {
@@ -468,6 +503,8 @@ new Game({
         },
         update (delta) {
             console.log("play#update", delta);
+
+            this.game.reset();
         }
     }
 }, {

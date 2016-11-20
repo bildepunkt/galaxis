@@ -15,10 +15,11 @@ var Camera = function Camera() {
 };
 
 var FSM = function () {
-    function FSM(states, camera, pool, width, height) {
+    function FSM(states, game, camera, pool, width, height) {
         _classCallCheck(this, FSM);
 
         this.states = states;
+        this.game = game;
         this.camera = camera;
         this.pool = pool;
         this.width = width;
@@ -28,19 +29,22 @@ var FSM = function () {
     _createClass(FSM, [{
         key: "load",
         value: function load(name) {
-            if (this.state) {
-                this.state.remove(this.state);
+            if (this.state && this.state.remove) {
+                this.state.remove();
             }
 
             this.state = this.states[name];
 
+            this.state.game = this.game;
             this.state.camera = this.camera;
             this.state.pool = this.pool;
             this.state.fsm = this;
             this.state.width = this.width;
             this.state.height = this.height;
 
-            this.state.init(this.state);
+            if (this.state.init) {
+                this.state.init();
+            }
         }
     }]);
 
@@ -365,20 +369,31 @@ var Ticker = function () {
         this.callback = callback;
         this.then = Date.now();
         this.update = this.update.bind(this);
+        this.cancelled = false;
 
-        requestAnimationFrame(this.update);
+        this.update();
     }
 
     _createClass(Ticker, [{
         key: "update",
         value: function update() {
+            if (this.cancelled) {
+                return;
+            }
+
             var now = Date.now();
-            var delta = Math.min(now - this.then, 64);
+            var delta = Math.min(now - this.then, 32);
 
             this.callback(delta);
             this.then = now;
 
-            requestAnimationFrame(this.update);
+            this.requestId = requestAnimationFrame(this.update);
+        }
+    }, {
+        key: "destroy",
+        value: function destroy() {
+            this.cancelled = true;
+            cancelAnimationFrame(this.requestId);
         }
     }]);
 
@@ -493,6 +508,8 @@ var Sprite = function () {
         this.rotation = 0;
         this.scaleX = 1;
         this.scaleY = 1;
+        this.pivotX = 0;
+        this.pivotY = 0;
         this.visible = true;
     }
 
@@ -503,15 +520,21 @@ var Sprite = function () {
                 return;
             }
 
+            context.translate(-this.pivotX, -this.pivotY);
             context.translate(this.x, this.y);
 
             if (this.rotation !== 0) {
-                context.translate(this.width / 2, this.height / 2);
+                context.translate(this.pivotX, this.pivotY);
                 context.rotate(this.rotation * Math.PI / 180);
-                context.translate(-this.width / 2, -this.height / 2);
+                context.translate(-this.pivotX, -this.pivotY);
             }
 
-            context.scale(this.scaleX, this.scaleY);
+            if (this.scaleX !== 1 || this.scaleY !== 1) {
+                context.translate(this.pivotX, this.pivotY);
+                context.scale(this.scaleX, this.scaleY);
+                context.translate(-this.pivotX, -this.pivotY);
+            }
+
             context.globalAlpha = this.alpha;
 
             // TODO - R E M O V E ! ! !
@@ -525,8 +548,6 @@ var Sprite = function () {
 
 var Game = function () {
     function Game(states, options) {
-        var _this = this;
-
         _classCallCheck(this, Game);
 
         var defaults = {
@@ -536,36 +557,62 @@ var Game = function () {
             preload: []
         };
 
-        options = Object.assign(defaults, options);
+        this.states = states;
+        this.options = Object.assign(defaults, options);
+        this.hasBooted = false;
 
-        this.camera = new Camera();
-        this.pool = new Pool();
-        this.viewport = new Viewport(options.width, options.height, options.id);
-        this.fsm = new FSM(states, this.camera, this.pool, options.width, options.height);
-        this.ticker = new Ticker(this.update.bind(this));
-
-        if (options.preload.length) {
-            new Preloader(options.preload, function () {
-                _this.fsm.load("initial");
-            });
-        } else {
-            this.fsm.load("initial");
-        }
+        this.boot();
     }
 
     _createClass(Game, [{
+        key: "boot",
+        value: function boot() {
+            var _this = this;
+
+            // psuedo game object
+            this.game = {
+                reset: this.boot.bind(this)
+            };
+            this.camera = new Camera();
+            this.pool = new Pool();
+            this.viewport = new Viewport(this.options.width, this.options.height, this.options.id);
+            this.fsm = new FSM(this.states, this.game, this.camera, this.pool, this.options.width, this.options.height);
+
+            if (this.hasBooted) {
+                this.ticker.destroy();
+            }
+
+            this.ticker = new Ticker(this.update.bind(this));
+
+            if (!this.hasBooted && this.options.preload.length) {
+                new Preloader(this.options.preload, function () {
+                    _this.fsm.load("initial");
+                });
+            } else {
+                this.fsm.load("initial");
+            }
+
+            this.hasBooted = true;
+        }
+    }, {
         key: "update",
         value: function update(delta) {
             var _this2 = this;
+
+            if (!this.fsm.state) {
+                return;
+            }
 
             this.viewport.clear(this.fsm.state.bgColor);
             this.viewport.context.save();
             this.viewport.context.translate(-this.camera.x, -this.camera.y);
 
-            this.fsm.state.update(this.fsm.state, delta);
+            this.fsm.state.update(delta);
             this.fsm.state.pool.each(function (item) {
+                _this2.viewport.context.save();
                 item.render(_this2.viewport.context);
-            });
+                _this2.viewport.context.restore();
+            }, this);
 
             this.viewport.context.restore();
         }
@@ -576,20 +623,44 @@ var Game = function () {
 
 new Game({
     initial: {
-        init: function init($) {
-            console.log("init");
+        init: function init() {
+            console.log("initial#init");
 
-            $.bgColor = "#678";
-            $.rect = new Sprite();
-            $.pool.add($.rect);
+            this.bgColor = "#678";
+            this.rect = new Sprite();
+            this.rect.pivotX = 32;
+            this.rect.pivotY = 32;
+            this.rect.rotation = 45;
+            this.rect.scaleX = 2;
+            this.rect.scaleY = 2;
+            this.pool.add(this.rect);
         },
-        update: function update($, delta) {
-            console.log("update");
+        update: function update(delta) {
+            console.log("initial#update", delta);
 
-            $.rect.x += 4;
+            var speed = delta / 4;
+
+            this.rect.x += speed;
+            this.rect.rotation += speed;
+
+            if (this.rect.x + this.rect.width >= this.width) {
+                this.fsm.load("play");
+            }
         },
-        remove: function remove($) {
-            console.log("remove");
+        remove: function remove() {
+            console.log("initial#remove");
+
+            this.pool.removeAll();
+        }
+    },
+    play: {
+        init: function init() {
+            console.log("play#init");
+        },
+        update: function update(delta) {
+            console.log("play#update", delta);
+
+            this.game.reset();
         }
     }
 }, {
