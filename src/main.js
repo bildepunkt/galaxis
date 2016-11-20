@@ -6,15 +6,17 @@ class Camera {
 }
 
 class FSM {
-    constructor (states, camera, pool) {
+    constructor (states, camera, pool, width, height) {
         this.states = states;
         this.camera = camera;
         this.pool = pool;
+        this.width = width;
+        this.height = height;
     }
     
     load (name) {
-        if (this.state) {
-            this.state.remove();
+        if (this.state && this.state.remove) {
+            this.state.remove(this.state);
         }
 
         this.state = this.states[name];
@@ -22,12 +24,12 @@ class FSM {
         this.state.camera = this.camera
         this.state.pool = this.pool;
         this.state.fsm = this;
+        this.state.width = this.width;
+        this.state.height = this.height;
 
-        this.state.init();
-    }
-    
-    update (delta) {
-        this.state.update(delta);
+        if (this.state.init) {
+            this.state.init(this.state);
+        }
     }
 }
 
@@ -351,9 +353,14 @@ class Sprite {
         this.rotation = 0;
         this.scaleX = 1;
         this.scaleY = 1;
+        this.visible = true;
     }
 
     render (context) {
+        if (!this.visible) {
+            return;
+        }
+
         context.translate(this.x, this.y);
 
         if (this.rotation !== 0) {
@@ -364,6 +371,10 @@ class Sprite {
         
         context.scale(this.scaleX, this.scaleY);
         context.globalAlpha = this.alpha;
+
+        // TODO - R E M O V E ! ! !
+        context.fillStyle = "#000";
+        context.fillRect(0, 0, this.width, this.height);
     }
 }
 
@@ -402,7 +413,7 @@ class Game {
         this.viewport.context.save();
         this.viewport.context.translate(-this.camera.x, -this.camera.y);
 
-        this.fsm.state.update(delta);
+        this.fsm.state.update(this.fsm.state, delta);
         this.fsm.state.pool.each(item=> {
             item.render(this.viewport.context);
         });
@@ -413,14 +424,35 @@ class Game {
 
 new Game({
     initial: {
-        init: ()=> {
-            console.log("init");
+        init: ($)=> {
+            console.log("initial#init");
+
+            $.bgColor = "#678";
+            $.rect = new Sprite();
+            $.pool.add($.rect);
         },
-        update: (delta)=> {
-            console.log(delta);
+        update: ($, delta)=> {
+            console.log("initial#update", delta);
+
+            $.rect.x += 4;
+            $.rect.rotation += 4;
+
+            if ($.rect.x + $.rect.width >= $.width) {
+                $.fsm.load("play");
+            }
         },
-        remove: ()=> {
-            console.log("remove");
+        remove: ($)=> {
+            console.log("initial#remove");
+
+            $.pool.removeAll();
+        }
+    },
+    play: {
+        init: ($)=> {
+            console.log("play#init", $);
+        },
+        update: ($, delta)=> {
+            console.log("play#update", delta);
         }
     }
 }, {

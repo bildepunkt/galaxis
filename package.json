@@ -1,7 +1,7 @@
 {
   "name": "galaxis",
   "version": "0.1.0",
-  "description": "An HTML5 game framework",
+  "description": "A tiny, modern, easy-to-use HTML5 game framework",
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/chai",
@@ -13,8 +13,7 @@
   },
   "keywords": [
     "html5",
-    "js",
-    "javascript",
+    "canvas",
     "mobile",
     "web",
     "game",

@@ -15,19 +15,21 @@ var Camera = function Camera() {
 };
 
 var FSM = function () {
-    function FSM(states, camera, pool) {
+    function FSM(states, camera, pool, width, height) {
         _classCallCheck(this, FSM);
 
         this.states = states;
         this.camera = camera;
         this.pool = pool;
+        this.width = width;
+        this.height = height;
     }
 
     _createClass(FSM, [{
         key: "load",
         value: function load(name) {
             if (this.state) {
-                this.state.remove();
+                this.state.remove(this.state);
             }
 
             this.state = this.states[name];
@@ -35,13 +37,10 @@ var FSM = function () {
             this.state.camera = this.camera;
             this.state.pool = this.pool;
             this.state.fsm = this;
+            this.state.width = this.width;
+            this.state.height = this.height;
 
-            this.state.init();
-        }
-    }, {
-        key: "update",
-        value: function update(delta) {
-            this.state.update(delta);
+            this.state.init(this.state);
         }
     }]);
 
@@ -494,11 +493,16 @@ var Sprite = function () {
         this.rotation = 0;
         this.scaleX = 1;
         this.scaleY = 1;
+        this.visible = true;
     }
 
     _createClass(Sprite, [{
         key: "render",
         value: function render(context) {
+            if (!this.visible) {
+                return;
+            }
+
             context.translate(this.x, this.y);
 
             if (this.rotation !== 0) {
@@ -509,6 +513,10 @@ var Sprite = function () {
 
             context.scale(this.scaleX, this.scaleY);
             context.globalAlpha = this.alpha;
+
+            // TODO - R E M O V E ! ! !
+            context.fillStyle = "#000";
+            context.fillRect(0, 0, this.width, this.height);
         }
     }]);
 
@@ -554,7 +562,7 @@ var Game = function () {
             this.viewport.context.save();
             this.viewport.context.translate(-this.camera.x, -this.camera.y);
 
-            this.fsm.state.update(delta);
+            this.fsm.state.update(this.fsm.state, delta);
             this.fsm.state.pool.each(function (item) {
                 item.render(_this2.viewport.context);
             });
@@ -568,13 +576,19 @@ var Game = function () {
 
 new Game({
     initial: {
-        init: function init() {
+        init: function init($) {
             console.log("init");
+
+            $.bgColor = "#678";
+            $.rect = new Sprite();
+            $.pool.add($.rect);
         },
-        update: function update(delta) {
-            console.log(delta);
+        update: function update($, delta) {
+            console.log("update");
+
+            $.rect.x += 4;
         },
-        remove: function remove() {
+        remove: function remove($) {
             console.log("remove");
         }
     }
