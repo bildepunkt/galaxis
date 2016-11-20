@@ -353,6 +353,8 @@ class Sprite {
         this.rotation = 0;
         this.scaleX = 1;
         this.scaleY = 1;
+        this.pivotX = 0;
+        this.pivotY = 0;
         this.visible = true;
     }
 
@@ -361,15 +363,21 @@ class Sprite {
             return;
         }
 
+        context.translate(-this.pivotX, -this.pivotY);
         context.translate(this.x, this.y);
-
-        if (this.rotation !== 0) {
-            context.translate(this.width / 2, this.height / 2);
-            context.rotate(this.rotation * Math.PI / 180);
-            context.translate(-this.width / 2, -this.height / 2);
-        }
         
-        context.scale(this.scaleX, this.scaleY);
+        if (this.rotation !== 0) {
+            context.translate(this.pivotX, this.pivotY);
+            context.rotate(this.rotation * Math.PI / 180);
+            context.translate(-this.pivotX, -this.pivotY);
+        }
+
+        if (this.scaleX !== 1 || this.scaleY !== 1) {
+            context.translate(this.pivotX, this.pivotY);
+            context.scale(this.scaleX, this.scaleY);
+            context.translate(-this.pivotX, -this.pivotY);
+        }
+
         context.globalAlpha = this.alpha;
 
         // TODO - R E M O V E ! ! !
@@ -429,13 +437,20 @@ new Game({
 
             this.bgColor = "#678";
             this.rect = new Sprite();
+            this.rect.pivotX = 32;
+            this.rect.pivotY = 32;
+            this.rect.rotation = 45;
+            this.rect.scaleX = 4;
+            this.rect.scaleY = 4;
             this.pool.add(this.rect);
         },
         update (delta) {
             console.log("initial#update", delta);
 
-            this.rect.x += 4;
-            this.rect.rotation += 4;
+            let speed = delta / 4;
+
+            this.rect.x += speed;
+            this.rect.rotation += speed;
 
             if (this.rect.x + this.rect.width >= this.width) {
                 this.fsm.load("play");
