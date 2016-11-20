@@ -16,7 +16,7 @@ class FSM {
     
     load (name) {
         if (this.state && this.state.remove) {
-            this.state.remove(this.state);
+            this.state.remove();
         }
 
         this.state = this.states[name];
@@ -28,7 +28,7 @@ class FSM {
         this.state.height = this.height;
 
         if (this.state.init) {
-            this.state.init(this.state);
+            this.state.init();
         }
     }
 }
@@ -413,7 +413,7 @@ class Game {
         this.viewport.context.save();
         this.viewport.context.translate(-this.camera.x, -this.camera.y);
 
-        this.fsm.state.update(this.fsm.state, delta);
+        this.fsm.state.update(delta);
         this.fsm.state.pool.each(item=> {
             item.render(this.viewport.context);
         });
@@ -424,34 +424,34 @@ class Game {
 
 new Game({
     initial: {
-        init: ($)=> {
+        init () {
             console.log("initial#init");
 
-            $.bgColor = "#678";
-            $.rect = new Sprite();
-            $.pool.add($.rect);
+            this.bgColor = "#678";
+            this.rect = new Sprite();
+            this.pool.add(this.rect);
         },
-        update: ($, delta)=> {
+        update (delta) {
             console.log("initial#update", delta);
 
-            $.rect.x += 4;
-            $.rect.rotation += 4;
+            this.rect.x += 4;
+            this.rect.rotation += 4;
 
-            if ($.rect.x + $.rect.width >= $.width) {
-                $.fsm.load("play");
+            if (this.rect.x + this.rect.width >= this.width) {
+                this.fsm.load("play");
             }
         },
-        remove: ($)=> {
+        remove () {
             console.log("initial#remove");
 
-            $.pool.removeAll();
+            this.pool.removeAll();
         }
     },
     play: {
-        init: ($)=> {
-            console.log("play#init", $);
+        init () {
+            console.log("play#init");
         },
-        update: ($, delta)=> {
+        update (delta) {
             console.log("play#update", delta);
         }
     }
