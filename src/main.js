@@ -6,9 +6,10 @@ class Camera {
 }
 
 class FSM {
-    constructor (states, game, camera, pool, width, height) {
+    constructor (states, game, listeners, camera, pool, width, height) {
         this.states = states;
         this.game = game;
+        this.listeners = listeners;
         this.camera = camera;
         this.pool = pool;
         this.width = width;
@@ -21,8 +22,11 @@ class FSM {
         }
 
         this.state = this.states[name];
+
+        this.listeners.reset();
         
         this.state.game = this.game;
+        this.state.listeners = this.listeners;
         this.state.camera = this.camera
         this.state.pool = this.pool;
         this.state.fsm = this;
@@ -266,6 +270,39 @@ class Pool {
     }
 }
 
+class Listeners {
+    constructor () {
+        this.events = {};
+    }
+
+    add (type, handler, target) {
+        if (!this.events[type]) {
+            this.events[type] = [];
+        }
+
+        this.events[type].push({
+            original: handler,
+            handler: handler.bind(this.state),
+            target
+        });
+    }
+
+    remove (type, handler) {
+        for (let i = 0, len = this.events[type].length; i < len; i++) {
+            let event = this.events[type][i];
+
+            if (event.original === handler) {
+                this.events[type].splice(i, 1);
+                break;
+            }
+        }
+    }
+
+    reset () {
+        this.events = {};
+    }
+}
+
 class Ticker {
     constructor (callback) {
         this.callback = callback;
@@ -424,8 +461,9 @@ class Game {
         this.viewport = new Viewport(
             this.options.width, this.options.height, this.options.id
         );
+        this.listeners = new Listeners();
         this.fsm = new FSM(
-            this.states, this.game, this.camera, this.pool, this.options.width, this.options.height
+            this.states, this.game, this.listeners, this.camera, this.pool, this.options.width, this.options.height
         );
 
         if (this.hasBooted) {
@@ -472,12 +510,19 @@ new Game({
 
             this.bgColor = "#678";
             this.rect = new Sprite();
+            this.rect2 = new Sprite();
             this.rect.pivotX = 32;
             this.rect.pivotY = 32;
             this.rect.rotation = 45;
             this.rect.scaleX = 2;
             this.rect.scaleY = 2;
-            this.pool.add(this.rect);
+            this.pool.add(this.rect, this.rect2);
+
+            this.listeners.add("click", (e)=> {
+                console.log(e);
+            }, this.rect);
+
+            console.log(this.listeners);
         },
         update (delta) {
             console.log("initial#update", delta);
@@ -500,6 +545,7 @@ new Game({
     play: {
         init () {
             console.log("play#init");
+            console.log(this.listeners);
         },
         update (delta) {
             console.log("play#update", delta);
