@@ -1,0 +1,33 @@
+{
+  "name": "galaxis",
+  "version": "0.1.0",
+  "description": "An HTML5 game framework",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/chai",
+    "babel": "./node_modules/.bin/babel -w src/main.js --out-file build/main.js --source-maps"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bildepunkt/galaxis.git"
+  },
+  "keywords": [
+    "html5",
+    "js",
+    "javascript",
+    "mobile",
+    "web",
+    "game",
+    "framework"
+  ],
+  "author": "Chris Peters <bildepunkt@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bildepunkt/galaxis/issues"
+  },
+  "homepage": "https://github.com/bildepunkt/galaxis#readme",
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-preset-latest": "^6.16.0"
+  }
+}
