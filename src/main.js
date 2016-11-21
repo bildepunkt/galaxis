@@ -1,3 +1,40 @@
+function itemMatch (a, b) {
+    return a.uid === b.uid;
+}
+
+function getBoundingBox (item) {
+    let w = item.width * Math.abs(item.sx);
+    let h = item.height * Math.abs(item.sy);
+    let x1 = item.x;
+    let y1 = item.y;
+    let x2 = item.sx >= 0 ? x1 + w : x1 - w;
+    let y2 = item.sy >= 0 ? y1 + h : y1 - h;
+
+    return {
+        minX: x1 <= x2 ? x1 : x2,
+        minY: y1 <= y2 ? y1 : y2,
+        maxX: x1 >= x2 ? x1 : x2,
+        maxY: y1 >= y2 ? y1 : y2
+    };
+}
+
+function pointRectCollide (x, y, rect) {
+    let bb = getBoundingBox(rect);
+    return x >= bb.minX && x <= bb.maxX && y >= bb.minY && y <= bb.maxY;
+}
+
+function getScaleFactor (canvas) {
+    let factor = 1;
+
+    // check if canvas has been scaled via CSS
+    if (canvas.style.width) {
+        let cssWidth = parseInt(canvas.style.width, 10);
+        factor = canvas.width / cssWidth;
+    }
+
+    return factor;
+}
+
 class Camera {
     constructor (x=0, y=0) {
         this.x = x;
@@ -6,14 +43,14 @@ class Camera {
 }
 
 class FSM {
-    constructor (states, game, listeners, camera, pool, width, height) {
-        this.states = states;
-        this.game = game;
-        this.listeners = listeners;
-        this.camera = camera;
-        this.pool = pool;
-        this.width = width;
-        this.height = height;
+    constructor (game) {
+        this.states = game.states;
+        this.game = game.game;
+        this.listeners = game.listeners;
+        this.camera = game.camera;
+        this.pool = game.pool;
+        this.width = game.options.width;
+        this.height = game.options.height;
     }
     
     load (name) {
@@ -21,10 +58,10 @@ class FSM {
             this.state.remove();
         }
 
+        this.listeners.reset();
+
         this.state = this.states[name];
 
-        this.listeners.reset();
-        
         this.state.game = this.game;
         this.state.listeners = this.listeners;
         this.state.camera = this.camera
@@ -242,7 +279,7 @@ class Pool {
 
         for (let i = 0, len = this.getCount(); i < len; i++) {
             let item = this.items[i];
-            if (spriteMatch(item, removee)) {
+            if (itemMatch(item, removee)) {
                 this.items.splice(i, 1);
                 removed = true;
                 break;
@@ -270,9 +307,222 @@ class Pool {
     }
 }
 
+class ClickManager {
+    constructor (start, end) {
+        this.startEvent = start;
+        this.endEvent = end;
+        this.clickee = null;
+    }
+
+    getEvents (event) {
+        let clickEvents = [];
+
+        // emulate events
+        switch (event.type) {
+        case this.startEvent:
+            this.clickee = event.target;
+            break;
+        case this.endEvent:
+            if (this.clickee && itemMatch(this.clickee, event.target)) {
+                let type;
+
+                switch (this.endEvent) {
+                case "mouseup":
+                    type = "click";
+                    break;
+                case "touchend":
+                    type = "tap";
+                    break;
+                }
+
+                clickEvents.push(Object.assign({}, event, {
+                    type
+                }));
+            }
+
+            this.clickee = null;
+            break;
+        }
+
+        return clickEvents;
+    }
+}
+
+class DragManager {
+    constructor (start, move, end) {
+        this.startEvent = start;
+        this.moveEvent = move;
+        this.endEvent = end;
+        this.dragee = null;
+        this.isDragging = false;
+        this.canDrag = false;
+    }
+
+    getEvents (event) {
+        let dragEvents = [];
+
+        // emulate events
+        switch (event.type) {
+        case this.startEvent:
+            this.canDrag = true;
+            this.dragee = event.target;
+            break;
+        case this.moveEvent:
+            if (this.canDrag) {
+                if (!this.isDragging) {
+                    dragEvents.push(Object.assign({}, event, {
+                        type: "dragstart",
+                        target: this.dragee
+                    }));
+                }
+
+                dragEvents.push(Object.assign({}, event, {
+                    type: "drag",
+                    target: this.dragee
+                }));
+
+                this.isDragging = true;
+            }
+            break;
+        case this.endEvent:
+            if (this.isDragging) {
+                dragEvents.push(Object.assign({}, event, {
+                    type: "dragend",
+                    target: this.dragee
+                }));
+
+                this.isDragging = false;
+                this.dragee = null;
+            }
+
+            this.canDrag = false;
+            break;
+        }
+
+        return dragEvents;
+    }
+}
+
+class Input {
+    constructor (canvas, pool, mouse, touch, keyboard) {
+        this.canvas = canvas;
+        this.pool = pool;
+        this.queuedEvents = [];
+        this.handleEvents = this.handleEvents.bind(this);
+
+        if (mouse) {
+            this.canvas.addEventListener("mousedown", this.handleEvents, false);
+            this.canvas.addEventListener("mouseup", this.handleEvents, false);
+            this.canvas.addEventListener("mousemove", this.handleEvents, false);
+            this.canvas.addEventListener("wheel", this.handleEvents, false);
+
+            this.mouseClickManager = new ClickManager("mousedown", "mouseup");
+            this.mouseDragManager = new DragManager("mousedown", "mousemove", "mouseup");
+        }
+
+        if (touch) {
+            this.canvas.addEventListener("touchstart", this.handleEvents, false);
+            this.canvas.addEventListener("touchend", this.handleEvents, false);
+            this.canvas.addEventListener("touchmove", this.handleEvents, false);
+
+            this.mouseClickManager = new ClickManager("touchstart", "touchend");
+            this.mouseDragManager = new DragManager("touchstart", "touchmove", "touchend");
+        }
+
+        if (keyboard) {
+            this.canvas.addEventListener("keydown", this.handleEvents, false);
+            this.canvas.addEventListener("keyup", this.handleEvents, false);
+        }
+    }
+
+    handleEvents (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let boundingRect = this.canvas.getBoundingClientRect();
+        let scaleFactor = getScaleFactor(this.canvas);
+        let event = {
+            domEvent: e,
+            type: e.type,
+            ctrlKey: e.ctrlKey,
+            shiftKey: e.shiftKey,
+            metaKey: e.metaKey,
+            button: e.button,
+            target: { uid: -1 }
+        };
+
+        if (e.touches && e.touches.length) {
+            x = e.touches[0].pageX;
+            y = e.touches[0].pageY;
+        } else if (e.changedTouches && e.changedTouches.length) {
+            x = e.changedTouches[0].pageX;
+            y = e.changedTouches[0].pageY;
+        } else {
+            x = e.pageX;
+            y = e.pageY;
+        }
+
+        if (e.type === "wheel") {
+            event.deltaX = e.deltaX;
+            event.deltaY = e.deltaY;
+        }
+
+        if (e.type !== "keyup" && e.type !== "keydown") {
+            // coordinate positions relative to canvas scaling
+            event.x = Math.ceil((e.pageX - (boundingRect.left + window.scrollX)) * scaleFactor);
+            event.y = Math.ceil((e.pageY - (boundingRect.top + window.scrollY)) * scaleFactor);
+        }
+
+        // find and set target object
+        this.pool.each((item)=> {
+            if (pointRectCollide(event.x, event.y, item)) {
+                event.target = item;
+                // don't break, we want the last-most (highest) item
+            }
+        });
+
+        this.queuedEvents.push(event);
+
+        this.queuedEvents = this.queuedEvents.concat(
+            this.mouseClickManager ? this.mouseClickManager.getEvents(event) : [],
+            this.touchClickManager ? this.touchClickManager.getEvents(event) : [],
+            this.mouseDragManager ? this.mouseDragManager.getEvents(event) : [],
+            this.touchDragManager ? this.touchDragManager.getEvents(event) : []
+        );
+    }
+}
+
 class Listeners {
     constructor () {
         this.events = {};
+        this.dragActionManager = {
+            dragee: null,
+            offset: {
+                x: 0,
+                y: 0
+            },
+
+            handle (event) {
+                switch (event.type) {
+                case "dragstart":
+                    if (event.target && event.target.draggable) {
+                        this.dragee = event.target;
+                        this.offset.x = event.x - this.dragee.x;
+                        this.offset.y = event.y - this.dragee.y;
+                    }
+                    break;
+                case "drag":
+                    if (this.dragee) {
+                        this.dragee.x = event.x - this.offset.x;
+                        this.dragee.y = event.y - this.offset.y;
+                    }
+                    break;
+                case "dragend":
+                    this.dragee = null;
+                    break;
+                }
+            }
+        };
     }
 
     add (type, handler, target) {
@@ -298,6 +548,35 @@ class Listeners {
         }
     }
 
+    executeHandlers () {
+        for (let inputType of this.inputTypes) {
+            for (let event of inputType.queuedEvents) {
+                switch (event.type) {
+                case "drag":
+                case "dragstart":
+                case "dragend":
+                    this.dragActionManager.handle(event);
+                    break;
+                }
+
+                for (let handlerObj of inputType.handlerObjects[event.type]) {
+                    // if not drag|dragend event, and target given, and it matches OR no target given
+                    // it doesn't apply to drag b/c on fast dragging, the event coordinates will move off the target
+                    // it doesn't apply to dragend b/c a dragend can happen on higher (top-most) target
+                    if (handlerObj.target ) {
+                        if (event.target && spriteMatch(handlerObj.target, event.target)) {
+                            handlerObj.handler(event);
+                        }
+                    } else {
+                        handlerObj.handler(event);
+                    }
+                }
+            }
+
+            inputType.queuedEvents = [];
+        }
+    }
+
     reset () {
         this.events = {};
     }
@@ -319,6 +598,7 @@ class Ticker {
         }
 
         let now = Date.now();
+        // use min to cap delta so things don't go haywire on "blur"
         let delta = Math.min(now - this.then, 32);
 
         this.callback(delta);
@@ -327,17 +607,17 @@ class Ticker {
         this.requestId = requestAnimationFrame(this.update);
     }
 
-    destroy () {
+    cancel () {
         this.cancelled = true;
         cancelAnimationFrame(this.requestId);
     }
 }
 
 class Viewport {
-    constructor (width, height, id) {
-        this.width = width;
-        this.height = height;
-        this.canvas = document.querySelector("#" + id);
+    constructor (options) {
+        this.width = options.width;
+        this.height = options.height;
+        this.canvas = document.querySelector("#" + options.id);
         this.canvas.width = this.width;
         this.canvas.height = this.height;
         this.context = this.canvas.getContext("2d");
@@ -404,7 +684,10 @@ class Sprite {
         this.scaleY = 1;
         this.pivotX = 0;
         this.pivotY = 0;
+        this.draggable = false;
         this.visible = true;
+        this.composite = "source-over";
+        this.uid = Sprite.uid++;
     }
 
     render (context) {
@@ -428,12 +711,14 @@ class Sprite {
         }
 
         context.globalAlpha = this.alpha;
+        context.globalCompositeOperation = this.compositeOperation;
 
         // TODO - R E M O V E ! ! !
         context.fillStyle = "#000";
         context.fillRect(0, 0, this.width, this.height);
     }
 }
+Sprite.uid = 0;
 
 class Game {
     constructor (states, options) {
@@ -458,16 +743,12 @@ class Game {
         };
         this.camera = new Camera();
         this.pool = new Pool();
-        this.viewport = new Viewport(
-            this.options.width, this.options.height, this.options.id
-        );
+        this.viewport = new Viewport(this.options);
         this.listeners = new Listeners();
-        this.fsm = new FSM(
-            this.states, this.game, this.listeners, this.camera, this.pool, this.options.width, this.options.height
-        );
+        this.fsm = new FSM(this);
 
         if (this.hasBooted) {
-            this.ticker.destroy();
+            this.ticker.cancel();
         }
 
         this.ticker = new Ticker(this.update.bind(this));
