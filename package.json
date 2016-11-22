@@ -4,8 +4,8 @@
   "description": "A tiny, modern, easy-to-use HTML5 game framework",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/chai",
-    "babel": "./node_modules/.bin/babel -w src/main.js --out-file build/main.js --source-maps"
+    "test": "./node_modules/.bin/babel-node spec/_run.js",
+    "babel": "./node_modules/.bin/babel -w play/main.js --out-file play/bundle.js --source-maps"
   },
   "repository": {
     "type": "git",
@@ -27,6 +27,10 @@
   "homepage": "https://github.com/bildepunkt/galaxis#readme",
   "devDependencies": {
     "babel-cli": "^6.18.0",
-    "babel-preset-latest": "^6.16.0"
+    "babel-core": "^6.18.2",
+    "babel-preset-latest": "^6.16.0",
+    "eslint": "^3.10.2",
+    "jasmine": "^2.5.2",
+    "jasmine-spec-reporter": "^2.7.0"
   }
 }
