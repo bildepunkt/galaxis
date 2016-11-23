@@ -1,3 +1,5 @@
+import { drawPivot } from "./debug";
+
 class Sprite {
     constructor (x=0, y=0) {
         this.x = x;
@@ -23,6 +25,8 @@ class Sprite {
 
         context.translate(-this.pivotX, -this.pivotY);
         context.translate(this.x, this.y);
+
+        drawPivot(context);
         
         if (this.rotation !== 0) {
             context.translate(this.pivotX, this.pivotY);
@@ -42,6 +46,14 @@ class Sprite {
         // TODO - R E M O V E ! ! !
         context.fillStyle = "#000";
         context.fillRect(0, 0, this.width, this.height);
+    }
+
+    get globalX () {
+        return this.x - this.pivotX;
+    }
+
+    get globalY () {
+        return this.y - this.pivotY;
     }
 }
 

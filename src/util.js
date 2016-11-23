@@ -5,8 +5,8 @@ export const itemMatch = (a, b)=> {
 export const getBoundingBox = (item)=> {
     let w = item.width * Math.abs(item.scaleX);
     let h = item.height * Math.abs(item.scaleY);
-    let x1 = item.x;
-    let y1 = item.y;
+    let x1 = item.globalX;
+    let y1 = item.globalY;
     let x2 = item.scaleX >= 0 ? x1 + w : x1 - w;
     let y2 = item.scaleY >= 0 ? y1 + h : y1 - h;
 

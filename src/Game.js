@@ -5,14 +5,17 @@ import Input from "./Input";
 import Listeners from "./Listeners";
 import FSM from "./FSM";
 import Ticker from "./Ticker";
+import Preloader from "./Preloader";
+import { drawGrid } from "./debug";
 
 export default class Game {
     constructor (states, options={}) {
         const defaults = {
-            width: 800,
-            height: 600,
+            width: 640,
+            height: 512,
             id: "game",
             preload: [],
+            debug: false,
             listenForMouse: true,
             listenForTouch: true,
             listenForKeyboard: true
@@ -64,6 +67,10 @@ export default class Game {
         this.viewport.clear(this.fsm.state.bgColor);
         this.viewport.context.save();
         this.viewport.context.translate(-this.camera.x, -this.camera.y);
+
+        if (this.options.debug) {
+            drawGrid(this.viewport.context, this.options.width, this.options.height);
+        }
 
         this.fsm.state.update(delta);
         this.fsm.state.pool.each(item=> {

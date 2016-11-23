@@ -1,3 +1,5 @@
+import { itemMatch } from "./util";
+
 export default class Pool {
     constructor (...items) {
         this.items = items || [];
