@@ -1,5 +1,3 @@
-import { drawPivot } from "./debug";
-
 class Sprite {
     constructor (x=0, y=0) {
         this.x = x;
@@ -23,22 +21,10 @@ class Sprite {
             return;
         }
 
-        context.translate(-this.pivotX, -this.pivotY);
         context.translate(this.x, this.y);
-
-        drawPivot(context);
-        
-        if (this.rotation !== 0) {
-            context.translate(this.pivotX, this.pivotY);
-            context.rotate(this.rotation * Math.PI / 180);
-            context.translate(-this.pivotX, -this.pivotY);
-        }
-
-        if (this.scaleX !== 1 || this.scaleY !== 1) {
-            context.translate(this.pivotX, this.pivotY);
-            context.scale(this.scaleX, this.scaleY);
-            context.translate(-this.pivotX, -this.pivotY);
-        }
+        context.rotate(this.rotation * Math.PI / 180);
+        context.scale(this.scaleX, this.scaleY);
+        context.translate(-this.pivotX, -this.pivotY);
 
         context.globalAlpha = this.alpha;
         context.globalCompositeOperation = this.compositeOperation;
@@ -49,11 +35,11 @@ class Sprite {
     }
 
     get globalX () {
-        return this.x - this.pivotX;
+        return this.x - this.pivotX * Math.abs(this.scaleX);
     }
 
     get globalY () {
-        return this.y - this.pivotY;
+        return this.y - this.pivotY * Math.abs(this.scaleY);
     }
 }
 

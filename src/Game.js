@@ -6,7 +6,7 @@ import Listeners from "./Listeners";
 import FSM from "./FSM";
 import Ticker from "./Ticker";
 import Preloader from "./Preloader";
-import { drawGrid } from "./debug";
+import { drawGrid, drawPivot } from "./debug";
 
 export default class Game {
     constructor (states, options={}) {
@@ -62,23 +62,31 @@ export default class Game {
             return;
         }
 
+        let context = this.viewport.context;
+
         this.listeners.executeHandlers();
 
         this.viewport.clear(this.fsm.state.bgColor);
-        this.viewport.context.save();
-        this.viewport.context.translate(-this.camera.x, -this.camera.y);
+        context.save();
+        context.translate(-this.camera.x, -this.camera.y);
 
         if (this.options.debug) {
-            drawGrid(this.viewport.context, this.options.width, this.options.height);
+            drawGrid(context, this.options.width, this.options.height);
         }
 
         this.fsm.state.update(delta);
         this.fsm.state.pool.each(item=> {
-            this.viewport.context.save();
-            item.render(this.viewport.context);
-            this.viewport.context.restore();
+            context.save();
+            item.render(context);
+
+            if (this.options.debug) {
+                context.translate(item.pivotX, item.pivotY);
+                drawPivot(context);
+            }
+
+            context.restore();
         }, this);
 
-        this.viewport.context.restore();
+        context.restore();
     }
 }

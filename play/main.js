@@ -9,15 +9,16 @@ new Game({
 
             this.bgColor = "#678";
 
-            this.rect = new Sprite(64, 64);
+            this.rect = new Sprite(64, 64); 
             //this.rect.pivotX = 32;
             //this.rect.pivotY = 32;
             this.rect.scaleX = 2;
             this.rect.scaleY = 2;
-            this.rect.alpha = 0.4;
+            this.rect.alpha = 0.2;
+            this.rect.rotation = 7.5;
 
             this.rect2 = new Sprite(256, 256);
-            this.rect2.draggable = true;
+            this.rect2.draggable = true;    
             this.rect2.scaleX = -1;
             this.rect2.scaleY = -1;
             this.rect2.alpha = 0.4;
@@ -28,6 +29,11 @@ new Game({
                 console.log(e.target);
                 console.log(getBoundingBox(e.target));
             }, this.rect);
+
+            this.listeners.add("drag", (e)=> {
+                console.log(e.target);
+                console.log(getBoundingBox(e.target));
+            }, this.rect2);
 
             console.log(this.listeners, 2);
         },
