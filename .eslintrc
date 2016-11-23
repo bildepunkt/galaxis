@@ -1,6 +1,8 @@
 {
     "env": {
-        "browser": true
+        "browser": true,
+        "es6": true,
+        "jasmine": true
     },
     "extends": [
         "eslint:recommended"
@@ -8,8 +10,5 @@
     "parserOptions": {
         "ecmaVersion": 6,
         "sourceType": "module"
-    },
-    "plugins": [
-        "jasmine"
-    ]
+    }
 }

@@ -4,8 +4,9 @@
   "description": "A tiny, modern, easy-to-use HTML5 game framework",
   "main": "index.js",
   "scripts": {
+    "lint": "./node_modules/.bin/eslint src",
     "test": "./node_modules/.bin/babel-node spec/_run.js",
-    "babel": "./node_modules/.bin/babel -w play/main.js --out-file play/bundle.js --source-maps"
+    "watch": "./node_modules/.bin/webpack --watch --progress --colors"
   },
   "repository": {
     "type": "git",
@@ -28,9 +29,11 @@
   "devDependencies": {
     "babel-cli": "^6.18.0",
     "babel-core": "^6.18.2",
+    "babel-loader": "^6.2.8",
     "babel-preset-latest": "^6.16.0",
     "eslint": "^3.10.2",
     "jasmine": "^2.5.2",
-    "jasmine-spec-reporter": "^2.7.0"
+    "jasmine-spec-reporter": "^2.7.0",
+    "webpack": "^1.13.3"
   }
 }
