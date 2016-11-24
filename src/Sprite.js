@@ -35,11 +35,11 @@ class Sprite {
     }
 
     get globalX () {
-        return this.x - this.pivotX * Math.abs(this.scaleX);
+        return this.x - this.pivotX * this.scaleX;
     }
 
     get globalY () {
-        return this.y - this.pivotY * Math.abs(this.scaleY);
+        return this.y - this.pivotY * this.scaleY;
     }
 }
 

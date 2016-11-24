@@ -66,18 +66,21 @@
 	            this.bgColor = "#678";
 	
 	            this.rect = new _Sprite2.default(64, 64);
-	            //this.rect.pivotX = 32;
-	            //this.rect.pivotY = 32;
-	            this.rect.scaleX = 2;
-	            this.rect.scaleY = 2;
+	            this.rect.pivotX = 32;
+	            this.rect.pivotY = 32;
+	            this.rect.scaleX = -2;
+	            this.rect.scaleY = -2;
 	            this.rect.alpha = 0.2;
-	            this.rect.rotation = 7.5;
+	            //this.rect.rotation = 7.5;
+	            this.rect.draggable = true;
+	            console.log((0, _util.getBoundingBox)(this.rect));
 	
 	            this.rect2 = new _Sprite2.default(256, 256);
 	            this.rect2.draggable = true;
 	            this.rect2.scaleX = -1;
 	            this.rect2.scaleY = -1;
 	            this.rect2.alpha = 0.4;
+	            console.log((0, _util.getBoundingBox)(this.rect2));
 	
 	            this.pool.add(this.rect, this.rect2);
 	
@@ -1428,12 +1431,12 @@
 	    }, {
 	        key: "globalX",
 	        get: function get() {
-	            return this.x - this.pivotX * Math.abs(this.scaleX);
+	            return this.x - this.pivotX * this.scaleX;
 	        }
 	    }, {
 	        key: "globalY",
 	        get: function get() {
-	            return this.y - this.pivotY * Math.abs(this.scaleY);
+	            return this.y - this.pivotY * this.scaleY;
 	        }
 	    }]);
 	
