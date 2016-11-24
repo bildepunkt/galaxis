@@ -1,5 +1,5 @@
 import Game from "../src/Game";
-import Sprite from "../src/Sprite";
+import Rectangle from "../src/Rectangle";
 import { getBoundingBox } from "../src/util";
 
 new Game({
@@ -7,23 +7,26 @@ new Game({
         init () {
             console.log("initial#init");
 
-            this.bgColor = "#678";
+            this.bgColor = "#789";
 
-            this.rect = new Sprite(64, 64); 
+            this.rect = new Rectangle(64, 64);
             this.rect.pivotX = 32;
             this.rect.pivotY = 32;
             this.rect.scaleX = -2;
             this.rect.scaleY = -2;
             this.rect.alpha = 0.2;
-            //this.rect.rotation = 7.5;
+            this.rect.rotation = 7.5;
             this.rect.draggable = true;
             console.log(getBoundingBox(this.rect));
 
-            this.rect2 = new Sprite(256, 256);
+            this.rect2 = new Rectangle(320, 256);
             this.rect2.draggable = true;    
+            /*this.rect2.pivotX = 32;
+            this.rect2.pivotY = 32;*/
             this.rect2.scaleX = -1;
             this.rect2.scaleY = -1;
             this.rect2.alpha = 0.4;
+            this.rect2.rotation = -45;
             console.log(getBoundingBox(this.rect2));
 
             this.pool.add(this.rect, this.rect2);

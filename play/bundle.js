@@ -50,9 +50,9 @@
 	
 	var _Game2 = _interopRequireDefault(_Game);
 	
-	var _Sprite = __webpack_require__(12);
+	var _Rectangle = __webpack_require__(13);
 	
-	var _Sprite2 = _interopRequireDefault(_Sprite);
+	var _Rectangle2 = _interopRequireDefault(_Rectangle);
 	
 	var _util = __webpack_require__(4);
 	
@@ -63,23 +63,26 @@
 	        init: function init() {
 	            console.log("initial#init");
 	
-	            this.bgColor = "#678";
+	            this.bgColor = "#789";
 	
-	            this.rect = new _Sprite2.default(64, 64);
+	            this.rect = new _Rectangle2.default(64, 64);
 	            this.rect.pivotX = 32;
 	            this.rect.pivotY = 32;
 	            this.rect.scaleX = -2;
 	            this.rect.scaleY = -2;
 	            this.rect.alpha = 0.2;
-	            //this.rect.rotation = 7.5;
+	            this.rect.rotation = 7.5;
 	            this.rect.draggable = true;
 	            console.log((0, _util.getBoundingBox)(this.rect));
 	
-	            this.rect2 = new _Sprite2.default(256, 256);
+	            this.rect2 = new _Rectangle2.default(320, 256);
 	            this.rect2.draggable = true;
+	            /*this.rect2.pivotX = 32;
+	            this.rect2.pivotY = 32;*/
 	            this.rect2.scaleX = -1;
 	            this.rect2.scaleY = -1;
 	            this.rect2.alpha = 0.4;
+	            this.rect2.rotation = -45;
 	            console.log((0, _util.getBoundingBox)(this.rect2));
 	
 	            this.pool.add(this.rect, this.rect2);
@@ -264,6 +267,7 @@
 	
 	                if (_this2.options.debug) {
 	                    context.translate(item.pivotX, item.pivotY);
+	                    (0, _debug.drawBoundingBox)(context, item);
 	                    (0, _debug.drawPivot)(context);
 	                }
 	
@@ -692,8 +696,92 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
+	var Xform = function () {
+	    function Xform() {
+	        _classCallCheck(this, Xform);
+	
+	        this.stack = [this.getSet()];
+	    }
+	
+	    _createClass(Xform, [{
+	        key: "translate",
+	        value: function translate() {
+	            var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+	            var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+	
+	            var xforms = this.getTransforms();
+	
+	            xforms.x += x;
+	            xforms.y += y;
+	        }
+	    }, {
+	        key: "scale",
+	        value: function scale() {
+	            var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
+	            var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+	
+	            var xforms = this.getTransforms();
+	
+	            xforms.scaleX *= x;
+	            xforms.scaleY *= y;
+	        }
+	    }, {
+	        key: "rotate",
+	        value: function rotate(rad) {
+	            var xforms = this.getTransforms();
+	
+	            xforms.rotation += rad;
+	        }
+	    }, {
+	        key: "clone",
+	        value: function clone(set) {
+	            return {
+	                x: set.x,
+	                y: set.y,
+	                scaleX: set.scaleX,
+	                scaleY: set.scaleY,
+	                rotation: set.rotation
+	            };
+	        }
+	    }, {
+	        key: "getSet",
+	        value: function getSet() {
+	            return {
+	                x: 0,
+	                y: 0,
+	                scaleX: 1,
+	                scaleY: 1,
+	                rotation: 0
+	            };
+	        }
+	    }, {
+	        key: "getTransforms",
+	        value: function getTransforms() {
+	            return this.stack[this.stack.length - 1];
+	        }
+	    }, {
+	        key: "save",
+	        value: function save() {
+	            this.stack.push(this.clone(this.getTransforms()));
+	        }
+	    }, {
+	        key: "restore",
+	        value: function restore() {
+	            this.stack.pop();
+	
+	            if (!this.stack.length) {
+	                this.stack[0] = this.getSet();
+	            }
+	        }
+	    }]);
+	
+	    return Xform;
+	}();
+	
 	var Viewport = function () {
 	    function Viewport(options) {
+	        var _this = this;
+	
 	        _classCallCheck(this, Viewport);
 	
 	        this.width = options.width;
@@ -702,6 +790,48 @@
 	        this.canvas.width = this.width;
 	        this.canvas.height = this.height;
 	        this.context = this.canvas.getContext("2d");
+	        this.xform = new Xform();
+	
+	        // save original context operations
+	        var original = {
+	            translate: this.context.translate,
+	            rotate: this.context.rotate,
+	            scale: this.context.scale,
+	            save: this.context.save,
+	            restore: this.context.restore
+	        };
+	
+	        // set new operations that call originals
+	        // NOTE setTransform is not currently supported
+	        this.context.translate = function (x, y) {
+	            _this.xform.translate(x, y);
+	            original.translate.call(_this.context, x, y);
+	            _this.context.xform = _this.xform.getTransforms();
+	        };
+	
+	        this.context.rotate = function (deg) {
+	            _this.xform.rotate(deg);
+	            original.rotate.call(_this.context, deg);
+	            _this.context.xform = _this.xform.getTransforms();
+	        };
+	
+	        this.context.scale = function (x, y) {
+	            _this.xform.scale(x, y);
+	            original.scale.call(_this.context, x, y);
+	            _this.context.xform = _this.xform.getTransforms();
+	        };
+	
+	        this.context.save = function () {
+	            _this.xform.save();
+	            original.save.call(_this.context);
+	            _this.context.xform = _this.xform.getTransforms();
+	        };
+	
+	        this.context.restore = function () {
+	            _this.xform.restore();
+	            original.restore.call(_this.context);
+	            _this.context.xform = _this.xform.getTransforms();
+	        };
 	    }
 	
 	    _createClass(Viewport, [{
@@ -1306,13 +1436,17 @@
 
 /***/ },
 /* 11 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	exports.drawBoundingBox = exports.drawPivot = exports.drawGrid = undefined;
+	
+	var _util = __webpack_require__(4);
+	
 	var drawGrid = exports.drawGrid = function drawGrid(context, width, height) {
 	    var size = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 32;
 	    var color = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "#000";
@@ -1371,6 +1505,20 @@
 	    context.stroke();
 	    context.restore();
 	};
+	
+	var drawBoundingBox = exports.drawBoundingBox = function drawBoundingBox(context, item) {
+	    var color = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "#FFF";
+	
+	    context.save();
+	    context.rotate(-context.xform.rotation);
+	    context.strokeStyle = color;
+	    context.lineWidth = 2;
+	    context.globalAlpha = 0.4;
+	    context.beginPath();
+	    context.rect(-item.pivotX, -item.pivotY, item.width, item.height);
+	    context.stroke();
+	    context.restore();
+	};
 
 /***/ },
 /* 12 */
@@ -1416,17 +1564,13 @@
 	                return;
 	            }
 	
-	            context.translate(this.x, this.y);
+	            context.translate(Math.floor(this.x), Math.floor(this.y));
 	            context.rotate(this.rotation * Math.PI / 180);
 	            context.scale(this.scaleX, this.scaleY);
-	            context.translate(-this.pivotX, -this.pivotY);
+	            context.translate(Math.floor(-this.pivotX), Math.floor(-this.pivotY));
 	
 	            context.globalAlpha = this.alpha;
 	            context.globalCompositeOperation = this.compositeOperation;
-	
-	            // TODO - R E M O V E ! ! !
-	            context.fillStyle = "#000";
-	            context.fillRect(0, 0, this.width, this.height);
 	        }
 	    }, {
 	        key: "globalX",
@@ -1446,6 +1590,70 @@
 	Sprite.uid = 0;
 	
 	exports.default = Sprite;
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+	
+	var _Sprite2 = __webpack_require__(12);
+	
+	var _Sprite3 = _interopRequireDefault(_Sprite2);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var Rectangle = function (_Sprite) {
+	    _inherits(Rectangle, _Sprite);
+	
+	    function Rectangle(x, y) {
+	        _classCallCheck(this, Rectangle);
+	
+	        var _this = _possibleConstructorReturn(this, (Rectangle.__proto__ || Object.getPrototypeOf(Rectangle)).call(this, x, y));
+	
+	        _this.fill = "#000";
+	        _this.stroke = "";
+	        return _this;
+	    }
+	
+	    _createClass(Rectangle, [{
+	        key: "render",
+	        value: function render(context) {
+	            _get(Rectangle.prototype.__proto__ || Object.getPrototypeOf(Rectangle.prototype), "render", this).call(this, context);
+	
+	            context.beginPath();
+	            context.rect(0, 0, this.width, this.height);
+	
+	            if (this.fill) {
+	                context.fillStyle = this.fill;
+	                context.fill();
+	            }
+	
+	            if (this.stroke) {
+	                context.strokeStyle = this.stroke;
+	                context.stroke();
+	            }
+	        }
+	    }]);
+	
+	    return Rectangle;
+	}(_Sprite3.default);
+	
+	exports.default = Rectangle;
 
 /***/ }
 /******/ ]);

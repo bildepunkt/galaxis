@@ -6,7 +6,7 @@ import Listeners from "./Listeners";
 import FSM from "./FSM";
 import Ticker from "./Ticker";
 import Preloader from "./Preloader";
-import { drawGrid, drawPivot } from "./debug";
+import { drawGrid, drawPivot, drawBoundingBox } from "./debug";
 
 export default class Game {
     constructor (states, options={}) {
@@ -81,6 +81,7 @@ export default class Game {
 
             if (this.options.debug) {
                 context.translate(item.pivotX, item.pivotY);
+                drawBoundingBox(context, item);
                 drawPivot(context);
             }
 
