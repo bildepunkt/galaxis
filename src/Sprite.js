@@ -21,17 +21,13 @@ class Sprite {
             return;
         }
 
-        context.translate(this.x, this.y);
+        context.translate(Math.floor(this.x), Math.floor(this.y));
         context.rotate(this.rotation * Math.PI / 180);
         context.scale(this.scaleX, this.scaleY);
-        context.translate(-this.pivotX, -this.pivotY);
+        context.translate(Math.floor(-this.pivotX), Math.floor(-this.pivotY));
 
         context.globalAlpha = this.alpha;
         context.globalCompositeOperation = this.compositeOperation;
-
-        // TODO - R E M O V E ! ! !
-        context.fillStyle = "#000";
-        context.fillRect(0, 0, this.width, this.height);
     }
 
     get globalX () {
