@@ -157,8 +157,8 @@ export default class Input {
             }
 
             // coordinate positions relative to canvas scaling
-            event.x = Math.round((event.x - (boundingRect.left + window.scrollX)) * scaleFactor);
-            event.y = Math.round((event.y - (boundingRect.top + window.scrollY)) * scaleFactor);
+            event.x = Math.floor((event.x - (boundingRect.left + window.scrollX)) * scaleFactor);
+            event.y = Math.floor((event.y - (boundingRect.top + window.scrollY)) * scaleFactor);
 
             // find and set target object
             this.pool.each((item)=> {
