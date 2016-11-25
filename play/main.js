@@ -5,8 +5,6 @@ import { getBoundingBox } from "../src/util";
 new Game({
     initial: {
         init () {
-            console.log("initial#init");
-
             this.bgColor = "#789";
 
             this.rect = new Rectangle(64, 64);
@@ -17,31 +15,33 @@ new Game({
             this.rect.alpha = 0.2;
             this.rect.rotation = 7.5;
             this.rect.draggable = true;
-            console.log(getBoundingBox(this.rect));
 
             this.rect2 = new Rectangle(320, 256);
             this.rect2.draggable = true;    
-            /*this.rect2.pivotX = 32;
-            this.rect2.pivotY = 32;*/
+            this.rect2.pivotX = -16;
+            this.rect2.pivotY = -16;
             this.rect2.scaleX = -1;
             this.rect2.scaleY = -1;
             this.rect2.alpha = 0.4;
             this.rect2.rotation = -45;
-            console.log(getBoundingBox(this.rect2));
 
-            this.pool.add(this.rect, this.rect2);
+            this.rect3 = new Rectangle(512, 64);
+            this.rect3.alpha = 0.4;
+            this.rect3.draggable = true;
+
+            this.pool.add(this.rect, this.rect2, this.rect3);
 
             this.listeners.add("click", (e)=> {
-                console.log(e.target);
                 console.log(getBoundingBox(e.target));
             }, this.rect);
 
             this.listeners.add("drag", (e)=> {
-                console.log(e.target);
                 console.log(getBoundingBox(e.target));
             }, this.rect2);
 
-            console.log(this.listeners, 2);
+            this.listeners.add("mousemove", (e)=> {
+                console.log(getBoundingBox(e.target));
+            }, this.rect3);
         },
         update (delta) {
             //console.log("initial#update", delta);

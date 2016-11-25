@@ -61,8 +61,6 @@
 	new _Game2.default({
 	    initial: {
 	        init: function init() {
-	            console.log("initial#init");
-	
 	            this.bgColor = "#789";
 	
 	            this.rect = new _Rectangle2.default(64, 64);
@@ -73,31 +71,33 @@
 	            this.rect.alpha = 0.2;
 	            this.rect.rotation = 7.5;
 	            this.rect.draggable = true;
-	            console.log((0, _util.getBoundingBox)(this.rect));
 	
 	            this.rect2 = new _Rectangle2.default(320, 256);
 	            this.rect2.draggable = true;
-	            /*this.rect2.pivotX = 32;
-	            this.rect2.pivotY = 32;*/
+	            this.rect2.pivotX = -16;
+	            this.rect2.pivotY = -16;
 	            this.rect2.scaleX = -1;
 	            this.rect2.scaleY = -1;
 	            this.rect2.alpha = 0.4;
 	            this.rect2.rotation = -45;
-	            console.log((0, _util.getBoundingBox)(this.rect2));
 	
-	            this.pool.add(this.rect, this.rect2);
+	            this.rect3 = new _Rectangle2.default(512, 64);
+	            this.rect3.alpha = 0.4;
+	            this.rect3.draggable = true;
+	
+	            this.pool.add(this.rect, this.rect2, this.rect3);
 	
 	            this.listeners.add("click", function (e) {
-	                console.log(e.target);
 	                console.log((0, _util.getBoundingBox)(e.target));
 	            }, this.rect);
 	
 	            this.listeners.add("drag", function (e) {
-	                console.log(e.target);
 	                console.log((0, _util.getBoundingBox)(e.target));
 	            }, this.rect2);
 	
-	            console.log(this.listeners, 2);
+	            this.listeners.add("mousemove", function (e) {
+	                console.log((0, _util.getBoundingBox)(e.target));
+	            }, this.rect3);
 	        },
 	        update: function update(delta) {
 	            //console.log("initial#update", delta);
@@ -264,14 +264,12 @@
 	            this.fsm.state.pool.each(function (item) {
 	                context.save();
 	                item.render(context);
+	                context.restore();
 	
 	                if (_this2.options.debug) {
-	                    context.translate(item.pivotX, item.pivotY);
 	                    (0, _debug.drawBoundingBox)(context, item);
-	                    (0, _debug.drawPivot)(context);
+	                    (0, _debug.drawPivot)(context, item);
 	                }
-	
-	                context.restore();
 	            }, this);
 	
 	            context.restore();
@@ -1042,8 +1040,8 @@
 	                }
 	
 	                // coordinate positions relative to canvas scaling
-	                event.x = Math.round((event.x - (boundingRect.left + window.scrollX)) * scaleFactor);
-	                event.y = Math.round((event.y - (boundingRect.top + window.scrollY)) * scaleFactor);
+	                event.x = Math.floor((event.x - (boundingRect.left + window.scrollX)) * scaleFactor);
+	                event.y = Math.floor((event.y - (boundingRect.top + window.scrollY)) * scaleFactor);
 	
 	                // find and set target object
 	                this.pool.each(function (item) {
@@ -1487,16 +1485,21 @@
 	    context.restore();
 	};
 	
-	var drawPivot = exports.drawPivot = function drawPivot(context) {
-	    var size = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 16;
-	    var color = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "#FFF";
+	var drawPivot = exports.drawPivot = function drawPivot(context, item) {
+	    var size = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 16;
+	    var color = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "#FFF";
 	
 	    var halfSize = size / 2;
 	
 	    context.save();
+	    context.translate(Math.floor(item.x), Math.floor(item.y));
+	    context.rotate(item.rotation * Math.PI / 180);
+	    context.scale(item.scaleX, item.scaleY);
+	
 	    context.strokeStyle = color;
 	    context.lineWidth = 4;
 	    context.globalAlpha = 0.4;
+	
 	    context.beginPath();
 	    context.moveTo(-halfSize, 0);
 	    context.lineTo(halfSize, 0);
@@ -1507,16 +1510,15 @@
 	};
 	
 	var drawBoundingBox = exports.drawBoundingBox = function drawBoundingBox(context, item) {
-	    var color = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "#FFF";
+	    var color = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "#C66";
+	
+	    var bb = (0, _util.getBoundingBox)(item);
 	
 	    context.save();
-	    context.rotate(-context.xform.rotation);
-	    context.strokeStyle = color;
+	    context.fillStyle = color;
 	    context.lineWidth = 2;
 	    context.globalAlpha = 0.4;
-	    context.beginPath();
-	    context.rect(-item.pivotX, -item.pivotY, item.width, item.height);
-	    context.stroke();
+	    context.fillRect(bb.minX, bb.minY, bb.maxX - bb.minX, bb.maxY - bb.minY);
 	    context.restore();
 	};
 
