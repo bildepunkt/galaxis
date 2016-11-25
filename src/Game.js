@@ -78,14 +78,12 @@ export default class Game {
         this.fsm.state.pool.each(item=> {
             context.save();
             item.render(context);
+            context.restore();
 
             if (this.options.debug) {
-                context.translate(item.pivotX, item.pivotY);
                 drawBoundingBox(context, item);
-                drawPivot(context);
+                drawPivot(context, item);
             }
-
-            context.restore();
         }, this);
 
         context.restore();

@@ -1,3 +1,5 @@
+import { getBoundingBox } from "./util";
+
 export const drawGrid = (context, width, height, size=32, color="#000")=> {
     const halfWidth = width / 2;
     const halfHeight = height / 2;
@@ -35,13 +37,18 @@ export const drawGrid = (context, width, height, size=32, color="#000")=> {
     context.restore();
 }
 
-export const drawPivot = (context, size=16, color="#FFF")=> {
+export const drawPivot = (context, item, size=16, color="#FFF")=> {
     const halfSize = size / 2;
 
     context.save();
+    context.translate(Math.floor(item.x), Math.floor(item.y));
+    context.rotate(item.rotation * Math.PI / 180);
+    context.scale(item.scaleX, item.scaleY);
+
     context.strokeStyle = color;
     context.lineWidth = 4;
     context.globalAlpha = 0.4;
+
     context.beginPath();
     context.moveTo(-halfSize, 0);
     context.lineTo(halfSize, 0);
@@ -52,11 +59,12 @@ export const drawPivot = (context, size=16, color="#FFF")=> {
 }
 
 export const drawBoundingBox = (context, item, color="#C66")=> {
+    let bb = getBoundingBox(item);
+
     context.save();
-    context.rotate(-context.xform.rotation);
     context.fillStyle = color;
     context.lineWidth = 2;
     context.globalAlpha = 0.4;
-    context.fillRect(-item.pivotX, -item.pivotY, item.width, item.height);
+    context.fillRect(bb.minX, bb.minY, bb.maxX - bb.minX, bb.maxY - bb.minY);
     context.restore();
 }
