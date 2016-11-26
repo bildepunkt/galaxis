@@ -1,116 +1,96 @@
 import Input from "../src/Input";
 import Pool from "../src/Pool";
+import Sprite from "../src/Sprite";
 import Element from "./_mocks/Element";
+import event from "./_mocks/event";
 
 describe("Input", ()=> {
     let canvas = new Element();
-    let pool
-
-    function handleEvent (e) {
-        console.log(e);
-    }
+    let input, pool;
 
     beforeEach(()=> {
-        pool = new Pool();
-    });
+        spyOn(canvas, "addEventListener");
 
-    it("instantiates", ()=> {
-        let input = new Input(canvas, pool, {
+        pool = new Pool();
+        input = new Input(canvas, pool, {
             listenForTouch: true,
             listenForMouse: true,
             listenForKeyboard: true
         });
+    });
+
+    it("instantiates and adds listeners", ()=> {
         expect(input instanceof Input).toBe(true);
+        expect(canvas.addEventListener).toHaveBeenCalled();
+        expect(canvas.addEventListener.calls.count()).toEqual(9);
     });
 
-    it("adds mouse handler object with target", ()=> {
-        let target = {
-            uuid: 2048
-        };
-        let handlerObject;
-
-        input.addListener(target, "click", handleEvent);
-        handlerObject = input.inputTypes[0].handlerObjects.click[0];
-
-        expect(handlerObject.handler).toEqual(handleEvent);
-        expect(handlerObject.target).toEqual(target);
+    it("adds mouse event to queue", ()=> {
+        event.type = "mousedown";
+        input.handleEvents(event);
+        expect(input.queuedEvents.length).toEqual(1);
+        expect(input.queuedEvents[0].type).toEqual("mousedown");
     });
 
-    it("adds mouse event handler object with no target", ()=> {
-        let handlerObject;
+    it("sets target based on item/event position", ()=> {
+        let item = new Sprite();
+        item.width = 64;
+        item.height = 64;
 
-        input.addListener(null, "click", handleEvent);
-        handlerObject = input.inputTypes[0].handlerObjects.click[0];
+        pool.add(item);
 
-        expect(handlerObject.handler).toEqual(handleEvent);
-        expect(handlerObject.target).toEqual(null);
+        event.type = "mousedown";
+        event.x = 32;
+        event.y = 16;
+        input.handleEvents(event);
+        expect(input.queuedEvents[0].target).toEqual(item);
     });
 
-    it("throws error on unlisted event add attempt", ()=> {
-        try {
-            input.addListener(null, "flubular", handleEvent);
-        } catch(err) {
-            expect(err).toEqual(new TypeError("Event type \"flubular\" does not exist."));
-        }
+    it("[mouse] queues psuedo click event from pointer down/up", ()=> {
+        event.type = "mousedown";
+        input.handleEvents(event);
+        event.type = "mouseup";
+        input.handleEvents(event);
+
+        expect(input.queuedEvents.length).toEqual(3);
+        expect(input.queuedEvents[2].type).toEqual("click");
     });
 
-    it("removes a handler object", ()=> {
-        input.addListener(null, "click", handleEvent);
-        expect(input.inputTypes[0].handlerObjects.click.length).toEqual(1);
-        input.removeListener("click", handleEvent);
-        expect(input.inputTypes[0].handlerObjects.click.length).toEqual(0);
+    it("[mouse] queues psuedo drag events", ()=> {
+        event.type = "mousedown";
+        input.handleEvents(event);
+        event.type = "mousemove";
+        input.handleEvents(event);
+        event.type = "mouseup";
+        input.handleEvents(event);
+
+        expect(input.queuedEvents.length).toEqual(7);
+        expect(input.queuedEvents[2].type).toEqual("dragstart");
+        expect(input.queuedEvents[3].type).toEqual("drag");
+        expect(input.queuedEvents[6].type).toEqual("dragend");
     });
 
-    it("removes a handler object with scoped handler", ()=> {
-        input.addListener(null, "click", handleEvent, this);
-        expect(input.inputTypes[0].handlerObjects.click.length).toEqual(1);
-        input.removeListener("click", handleEvent);
-        expect(input.inputTypes[0].handlerObjects.click.length).toEqual(0);
+    it("[touch] queues psuedo tap event from pointer down/up", ()=> {
+        event.type = "touchstart";
+        input.handleEvents(event);
+        event.type = "touchend";
+        input.handleEvents(event);
+
+        expect(input.queuedEvents.length).toEqual(3);
+        expect(input.queuedEvents[2].type).toEqual("tap");
     });
 
-    it("throws error on unlisted event removal attempt", ()=> {
-        try {
-            input.removeListener(null, "flubular", handleEvent);
-        } catch(err) {
-            expect(err).toEqual(new TypeError("Event type \"flubular\" does not exist."));
-        }
-    });
+    it("[touch] queues psuedo drag events", ()=> {
+        event.type = "touchstart";
+        input.handleEvents(event);
+        event.type = "touchmove";
+        input.handleEvents(event);
+        event.type = "touchend";
+        input.handleEvents(event);
 
-    it("adds a mouse handler", ()=> {
-        let evt = Object.assign({}, event);
-        evt.pageX = 32;
-        evt.pageY = 32;
-
-        input.addListener(null, "click", handleEvent);
-        input.inputTypes[0].enqueueEvent(evt);
-
-        expect(input.inputTypes[0].queuedEvents[0]).toEqual({
-            domEvent: evt,
-            type: "click",
-            ctrlKey: false,
-            shiftKey: false,
-            metaKey: false,
-            button: 0,
-            x: 32,
-            y: 32,
-            target: stage
-        });
-    });
-
-    it("executes a mouse handler", ()=> {
-        let evt = Object.assign({}, event);
-        let type;
-
-        evt.pageX = 32;
-        evt.pageY = 32;
-
-        input.addListener(null, "click", handleEvent);
-        input.inputTypes[0].enqueueEvent(evt);
-        type = input.inputTypes[0].handlerObjects.click[0];
-
-        spyOn(type, "handler");
-
-        input._onTick();
-        expect(type.handler).toHaveBeenCalled();
+        expect(input.queuedEvents.length).toEqual(7);
+        expect(input.queuedEvents[2].type).toEqual("dragstart");
+        expect(input.queuedEvents[3].type).toEqual("drag");
+        expect(input.queuedEvents[6].type).toEqual("dragend");
     });
 });
