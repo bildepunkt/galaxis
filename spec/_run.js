@@ -10,13 +10,27 @@ global.document = {
         return new Element();
     }
 };
-global.requestAnimationFrame = (callback)=> {
-    setTimeout(()=> {
-        console.log("callback");
-        callback();
-    }, 16);
+
+global.rafMock = {
+    callback: null,
+
+    cancel () {
+        this.callback = null;
+    },
+    request (callback) {
+        this.callback = callback;
+    },
+    tick () {
+        this.callback();
+    }
 };
-global.cancelAnimationFrame = noop;
+global.requestAnimationFrame = global.rafMock.request.bind(global.rafMock);
+global.cancelAnimationFrame = global.rafMock.cancel.bind(global.rafMock);
+
+global.window = {
+    scrollX: 0,
+    scrollY: 0
+};
 
 var jrunner = new Jasmine();
 jrunner.configureDefaultReporter({print: noop});    // jasmine < 2.4.1, remove default reporter logs

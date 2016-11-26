@@ -10,12 +10,12 @@ describe("Ticker", ()=> {
     });
 
     it("executes the given callback", ()=> {
-        setTimeout(()=> {
-            expect(callback).toHaveBeenCalled();
-        }, 16);
+        rafMock.tick();
+        expect(callback).toHaveBeenCalled();
     });
 
     it("does not update if cancelled", ()=> {
+        rafMock.tick();
         ticker.cancel();
         callback.calls.reset();
         ticker.update();

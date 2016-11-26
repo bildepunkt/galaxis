@@ -11,12 +11,15 @@ describe("Game", ()=> {
     it("initializes with options", ()=> {
         let game = new Game({
             initial: {
-                init
+                init,
+                update
             }
         }, {
             width: 512,
             debug: true
         });
+
+        rafMock.tick();
 
         expect(game instanceof Game).toBe(true);
         expect(game.options.width).toEqual(512);
@@ -36,10 +39,10 @@ describe("Game", ()=> {
         spyOn(game.listeners, "executeHandlers");
         spyOn(game.viewport, "clear");
 
-        setTimeout(()=> {
-            expect(game.fsm.state.update).toHaveBeenCalled();
-            expect(game.listeners.executeHandlers).toHaveBeenCalled();
-            expect(game.viewport.clear).toHaveBeenCalled();
-        }, 16);
+        rafMock.tick();
+
+        expect(game.fsm.state.update).toHaveBeenCalled();
+        expect(game.listeners.executeHandlers).toHaveBeenCalled();
+        expect(game.viewport.clear).toHaveBeenCalled();
     });
 });
