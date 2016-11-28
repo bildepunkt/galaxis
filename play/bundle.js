@@ -216,10 +216,15 @@
 	            this.game = {
 	                reset: this.boot.bind(this)
 	            };
+	
 	            this.camera = new _Camera2.default();
 	            this.pool = new _Pool2.default();
-	            this.viewport = new _Viewport2.default(this.options);
-	            this.input = new _Input2.default(this.viewport.canvas, this.pool, this.options);
+	
+	            if (!this.hasBooted) {
+	                this.viewport = new _Viewport2.default(this.options);
+	                this.input = new _Input2.default(this.viewport.canvas, this.pool, this.options);
+	            }
+	
 	            this.listeners = new _Listeners2.default(this.input);
 	            this.fsm = new _FSM2.default(this);
 	
@@ -251,8 +256,8 @@
 	            var context = this.viewport.context;
 	
 	            this.listeners.executeHandlers();
-	
 	            this.viewport.clear(this.fsm.state.bgColor);
+	
 	            context.save();
 	            context.translate(-this.camera.x, -this.camera.y);
 	

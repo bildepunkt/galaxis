@@ -32,4 +32,31 @@ describe("Listeners", ()=> {
         expect(typeof listeners.events.click[0].handler).toEqual("function");
         expect(listeners.events.click[0].target).toEqual(undefined);
     });
+
+    it("removes a handler", ()=> {
+        listeners.add("touchend", handleEvent);
+        expect(listeners.events.touchend.length).toEqual(1);
+        listeners.remove("touchend", handleEvent);
+        expect(listeners.events.touchend.length).toEqual(0);
+    });
+
+    it("executes handlers", ()=> {
+        listeners.add("tap", handleEvent);
+        listeners.input.queuedEvents.push({
+            type: "tap"
+        });
+
+        expect(listeners.input.queuedEvents.length).toEqual(1);
+        listeners.executeHandlers();
+        expect(listeners.events.tap[0].original).toHaveBeenCalled();
+        expect(listeners.input.queuedEvents.length).toEqual(0);
+    });
+
+    xit("doesn't execute a handler - with a target - if coordinates don't match", ()=> {
+        //
+    });
+
+    xit("updates item's coordinates on drag*", ()=> {
+        //
+    });
 });
