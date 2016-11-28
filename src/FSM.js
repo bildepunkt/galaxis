@@ -1,12 +1,17 @@
+import Preloader from "./Preloader";
+
 export default class FSM {
     constructor (game) {
         this.states = game.states;
-        this.game = game.game;
-        this.listeners = game.listeners;
-        this.camera = game.camera;
-        this.pool = game.pool;
-        this.width = game.options.width;
-        this.height = game.options.height;
+
+        this.game = {
+            reset: game.reset.bind(game),
+            listeners: game.listeners,
+            camera: game.camera,
+            pool: game.pool,
+            width: game.options.width,
+            height: game.options.height
+        };
     }
     
     load (name) {
@@ -14,20 +19,16 @@ export default class FSM {
             this.state.remove();
         }
 
-        this.listeners.reset();
-
+        this.game.listeners.reset();
         this.state = this.states[name];
 
-        this.state.game = this.game;
-        this.state.listeners = this.listeners;
-        this.state.camera = this.camera
-        this.state.pool = this.pool;
-        this.state.fsm = this;
-        this.state.width = this.width;
-        this.state.height = this.height;
+        new Preloader(this.state.preload || [], ()=> {
+            this.state.game = this.game;
+            this.state.game.fsm = this;
 
-        if (this.state.init) {
-            this.state.init();
-        }
+            if (this.state.init) {
+                this.state.init();
+            }
+        });
     }
 }

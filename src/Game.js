@@ -5,7 +5,6 @@ import Input from "./Input";
 import Listeners from "./Listeners";
 import FSM from "./FSM";
 import Ticker from "./Ticker";
-import Preloader from "./Preloader";
 import { drawGrid, drawPivot, drawBoundingBox } from "./debug";
 
 export default class Game {
@@ -14,7 +13,6 @@ export default class Game {
             width: 640,
             height: 512,
             id: "game",
-            preload: [],
             debug: false,
             listenForMouse: true,
             listenForTouch: true,
@@ -23,43 +21,29 @@ export default class Game {
 
         this.states = states;
         this.options = Object.assign(defaults, options);
-        this.hasBooted = false;
 
         this.boot();
     }
 
     boot () {
-        // psuedo game object
-        this.game = {
-            reset: this.boot.bind(this)
-        };
-
+        // TODO add plugin support with events & lifecycle directives
         this.camera = new Camera();
         this.pool = new Pool();
-
-        if (!this.hasBooted) {
-            this.viewport = new Viewport(this.options);
-            this.input = new Input(this.viewport.canvas, this.pool, this.options);
-        }
-
+        this.viewport = new Viewport(this.options);
+        this.input = new Input(this.viewport.canvas, this.pool, this.options);
         this.listeners = new Listeners(this.input);
         this.fsm = new FSM(this);
-
-        if (this.hasBooted) {
-            this.ticker.cancel();
-        }
-
         this.ticker = new Ticker(this.update.bind(this));
 
-        if (!this.hasBooted && this.options.preload.length) {
-            new Preloader(this.options.preload, ()=> {
-                this.fsm.load("initial");
-            });
-        } else {
-            this.fsm.load("initial");
-        }
+        this.fsm.load("initial");
+    }
 
-        this.hasBooted = true;
+    reset () {
+        this.camera = new Camera();
+        this.pool.removeAll();
+        this.listeners.reset();
+
+        this.fsm.load("initial");
     }
 
     update (delta) {
@@ -76,11 +60,13 @@ export default class Game {
         context.translate(-this.camera.x, -this.camera.y);
 
         if (this.options.debug) {
+            // TODO account for camera
             drawGrid(context, this.options.width, this.options.height);
         }
 
-        this.fsm.state.update(delta);
-        this.fsm.state.pool.each(item=> {
+        let state = this.fsm.state;
+        state.update(delta);
+        state.game.pool.each(item => {
             context.save();
             item.render(context);
             context.restore();
