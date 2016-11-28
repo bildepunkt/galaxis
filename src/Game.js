@@ -33,10 +33,15 @@ export default class Game {
         this.game = {
             reset: this.boot.bind(this)
         };
+
         this.camera = new Camera();
         this.pool = new Pool();
-        this.viewport = new Viewport(this.options);
-        this.input = new Input(this.viewport.canvas, this.pool, this.options);
+
+        if (!this.hasBooted) {
+            this.viewport = new Viewport(this.options);
+            this.input = new Input(this.viewport.canvas, this.pool, this.options);
+        }
+
         this.listeners = new Listeners(this.input);
         this.fsm = new FSM(this);
 
@@ -65,8 +70,8 @@ export default class Game {
         let context = this.viewport.context;
 
         this.listeners.executeHandlers();
-
         this.viewport.clear(this.fsm.state.bgColor);
+
         context.save();
         context.translate(-this.camera.x, -this.camera.y);
 
