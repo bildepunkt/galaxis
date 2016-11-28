@@ -2,6 +2,7 @@ export const itemMatch = (a, b)=> {
     return a.uid === b.uid;
 }
 
+// TODO account for camera
 export const getBoundingBox = (item)=> {
     let w = item.width * Math.abs(item.scaleX);
     let h = item.height * Math.abs(item.scaleY);

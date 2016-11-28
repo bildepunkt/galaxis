@@ -4,6 +4,12 @@ export default class Preloader {
         this.loaded = 0;
         this.count = paths.length;
 
+        if (this.count === 0) {
+            console.warn("no assets to load!");
+            callback();
+            return;
+        }
+
         for (let path of paths) {
             let asset;
 
@@ -20,6 +26,7 @@ export default class Preloader {
         }
     }
 
+    // only works for images and sounds
     getType (path) {
         return path.indexOf(".mp3") > 0 || path.indexOf(".wav") > 0 || path.indexOf(".ogv") > 0 ?
             "audio" :
@@ -31,7 +38,7 @@ export default class Preloader {
         console.log(`asset ${this.loaded} of ${this.count} loaded`);
 
         if (this.loaded === this.count) {
-            console.log("assets loaded");
+            console.log("all assets loaded!");
             this.callback();
         }
     }

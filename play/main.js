@@ -4,8 +4,14 @@ import { getBoundingBox } from "../src/util";
 
 new Game({
     initial: {
+        preload: [
+            "assets/cragger.png"
+        ],
+
         init () {
             this.bgColor = "#789";
+
+            this.game.camera.x = 256;
 
             this.rect = new Rectangle(64, 64);
             this.rect.pivotX = 32;
@@ -29,20 +35,21 @@ new Game({
             this.rect3.alpha = 0.4;
             this.rect3.draggable = true;
 
-            this.pool.add(this.rect, this.rect2, this.rect3);
+            this.game.pool.add(this.rect, this.rect2, this.rect3);
 
-            this.listeners.add("click", (e)=> {
+            this.game.listeners.add("click", (e)=> {
                 console.log(getBoundingBox(e.target));
             }, this.rect);
 
-            this.listeners.add("drag", (e)=> {
+            this.game.listeners.add("drag", (e)=> {
                 console.log(getBoundingBox(e.target));
             }, this.rect2);
 
-            this.listeners.add("mousemove", (e)=> {
+            this.game.listeners.add("mousemove", (e)=> {
                 console.log(getBoundingBox(e.target));
             }, this.rect3);
         },
+
         update (delta) {
             //console.log("initial#update", delta);
 
@@ -51,30 +58,30 @@ new Game({
             //this.rect.x += speed;
             //this.rect.rotation += speed;
 
-            if (this.rect.x + this.rect.width >= this.width) {
-                this.fsm.load("play");
+            if (this.rect.x + this.rect.width >= this.game.width) {
+                this.game.fsm.load("play");
             }
         },
+
         remove () {
             console.log("initial#remove");
 
-            this.pool.removeAll();
+            this.game.pool.removeAll();
         }
     },
     play: {
         init () {
             console.log("play#init");
-            console.log(this.listeners);
+            console.log(this.game.listeners);
+
+            this.game.listeners.add("click", ()=> {
+                this.game.reset();    
+            });
         },
         update (delta) {
             console.log("play#update", delta);
-
-            this.game.reset();
         }
     }
 }, {
-    preload: [
-        "assets/cragger.png"
-    ],
     debug: true
 });
