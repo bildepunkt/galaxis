@@ -30,7 +30,7 @@ export default class Game {
         this.camera = new Camera();
         this.pool = new Pool();
         this.viewport = new Viewport(this.options);
-        this.input = new Input(this.viewport.canvas, this.pool, this.options);
+        this.input = new Input(this.viewport.canvas, this.pool, this.camera, this.options);
         this.listeners = new Listeners(this.input);
         this.fsm = new FSM(this);
         this.ticker = new Ticker(this.update.bind(this));

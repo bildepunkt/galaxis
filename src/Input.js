@@ -97,9 +97,10 @@ class DragManager {
 }
 
 export default class Input {
-    constructor (canvas, pool, options) {
+    constructor (canvas, pool, camera, options) {
         this.canvas = canvas;
         this.pool = pool;
+        this.camera = camera;
         this.queuedEvents = [];
         this.handleEvents = this.handleEvents.bind(this);
 
@@ -159,6 +160,10 @@ export default class Input {
             // coordinate positions relative to canvas scaling
             event.x = Math.floor((event.x - (boundingRect.left + window.scrollX)) * scaleFactor);
             event.y = Math.floor((event.y - (boundingRect.top + window.scrollY)) * scaleFactor);
+
+            // TODO is this sustainable as opposed to offsetting items bounding box with camera?
+            event.x += this.camera.x;
+            event.y += this.camera.y;
 
             // find and set target object
             this.pool.each((item)=> {
