@@ -1,5 +1,5 @@
 import Game from "../src/Game";
-import Rectangle from "../src/Rectangle";
+import Rectangle from "../src/shape/Rectangle";
 import { getBoundingBox } from "../src/util";
 
 new Game({
@@ -11,7 +11,7 @@ new Game({
         init () {
             this.bgColor = "#789";
 
-            this.game.camera.x = 256;
+            this.game.camera.x = 64;
 
             this.rect = new Rectangle(64, 64);
             this.rect.pivotX = 32;
@@ -58,12 +58,12 @@ new Game({
             //this.rect.x += speed;
             //this.rect.rotation += speed;
 
-            if (this.rect.x + this.rect.width >= this.game.width) {
+            if (getBoundingBox(this.rect).maxX >= this.game.width) {
                 this.game.fsm.load("play");
             }
         },
 
-        remove () {
+        destroy () {
             console.log("initial#remove");
 
             this.game.pool.removeAll();

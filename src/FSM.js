@@ -15,8 +15,8 @@ export default class FSM {
     }
     
     load (name) {
-        if (this.state && this.state.remove) {
-            this.state.remove();
+        if (this.state && this.state.destroy) {
+            this.state.destroy();
         }
 
         this.game.listeners.reset();

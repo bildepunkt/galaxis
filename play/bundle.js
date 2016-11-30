@@ -50,7 +50,7 @@
 	
 	var _Game2 = _interopRequireDefault(_Game);
 	
-	var _Rectangle = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../src/Rectangle\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
+	var _Rectangle = __webpack_require__(15);
 	
 	var _Rectangle2 = _interopRequireDefault(_Rectangle);
 	
@@ -65,7 +65,7 @@
 	        init: function init() {
 	            this.bgColor = "#789";
 	
-	            this.game.camera.x = 256;
+	            this.game.camera.x = 64;
 	
 	            this.rect = new _Rectangle2.default(64, 64);
 	            this.rect.pivotX = 32;
@@ -111,11 +111,11 @@
 	            //this.rect.x += speed;
 	            //this.rect.rotation += speed;
 	
-	            if (this.rect.x + this.rect.width >= this.game.width) {
+	            if ((0, _util.getBoundingBox)(this.rect).maxX >= this.game.width) {
 	                this.game.fsm.load("play");
 	            }
 	        },
-	        remove: function remove() {
+	        destroy: function destroy() {
 	            console.log("initial#remove");
 	
 	            this.game.pool.removeAll();
@@ -225,7 +225,6 @@
 	    }, {
 	        key: "reset",
 	        value: function reset() {
-	            this.camera = new _Camera2.default();
 	            this.pool.removeAll();
 	            this.listeners.reset();
 	
@@ -250,7 +249,7 @@
 	
 	            if (this.options.debug) {
 	                // TODO account for camera
-	                (0, _debug.drawGrid)(context, this.options.width, this.options.height);
+	                (0, _debug.drawGrid)(context, this.camera, this.options.width, this.options.height);
 	            }
 	
 	            var state = this.fsm.state;
@@ -1279,8 +1278,8 @@
 	        value: function load(name) {
 	            var _this = this;
 	
-	            if (this.state && this.state.remove) {
-	                this.state.remove();
+	            if (this.state && this.state.destroy) {
+	                this.state.destroy();
 	            }
 	
 	            this.game.listeners.reset();
@@ -1461,14 +1460,16 @@
 	
 	var _util = __webpack_require__(4);
 	
-	var drawGrid = exports.drawGrid = function drawGrid(context, width, height) {
-	    var size = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 32;
-	    var color = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : "#000";
+	var drawGrid = exports.drawGrid = function drawGrid(context, camera, width, height) {
+	    var size = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 32;
+	    var color = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : "#000";
 	
-	    var halfWidth = width / 2;
-	    var halfHeight = height / 2;
-	    var linesX = width / size;
-	    var linesY = height / size;
+	    var widthWithCam = width + camera.x;
+	    var heightWithCam = height + camera.y;
+	    var halfWidth = widthWithCam / 2;
+	    var halfHeight = heightWithCam / 2;
+	    var linesX = widthWithCam / size;
+	    var linesY = heightWithCam / size;
 	    var count = linesX > linesY ? linesX : linesY;
 	    var i = -1;
 	
@@ -1486,14 +1487,14 @@
 	        context.beginPath();
 	
 	        context.moveTo(-halfWidth, -i * size);
-	        context.lineTo(width, -i * size);
+	        context.lineTo(widthWithCam, -i * size);
 	        context.moveTo(-halfWidth, i * size);
-	        context.lineTo(width, i * size);
+	        context.lineTo(widthWithCam, i * size);
 	
 	        context.moveTo(-i * size, -halfHeight);
-	        context.lineTo(-i * size, height);
+	        context.lineTo(-i * size, heightWithCam);
 	        context.moveTo(i * size, -halfHeight);
-	        context.lineTo(i * size, height);
+	        context.lineTo(i * size, heightWithCam);
 	
 	        context.stroke();
 	    }
@@ -1537,6 +1538,143 @@
 	    context.fillRect(bb.minX, bb.minY, bb.maxX - bb.minX, bb.maxY - bb.minY);
 	    context.restore();
 	};
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Sprite = function () {
+	    function Sprite() {
+	        var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+	        var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+	
+	        _classCallCheck(this, Sprite);
+	
+	        this.x = x;
+	        this.y = y;
+	        this.width = 64;
+	        this.height = 64;
+	        this.alpha = 1;
+	        this.rotation = 0;
+	        this.scaleX = 1;
+	        this.scaleY = 1;
+	        this.pivotX = 0;
+	        this.pivotY = 0;
+	        this.draggable = false;
+	        this.visible = true;
+	        this.composite = "source-over";
+	        this.uid = Sprite.uid++;
+	    }
+	
+	    _createClass(Sprite, [{
+	        key: "render",
+	        value: function render(context) {
+	            if (!this.visible) {
+	                return;
+	            }
+	
+	            context.translate(Math.floor(this.x), Math.floor(this.y));
+	            context.rotate(this.rotation * Math.PI / 180);
+	            context.scale(this.scaleX, this.scaleY);
+	            context.translate(Math.floor(-this.pivotX), Math.floor(-this.pivotY));
+	
+	            context.globalAlpha = this.alpha;
+	            context.globalCompositeOperation = this.compositeOperation;
+	        }
+	    }, {
+	        key: "globalX",
+	        get: function get() {
+	            return this.x - this.pivotX * this.scaleX;
+	        }
+	    }, {
+	        key: "globalY",
+	        get: function get() {
+	            return this.y - this.pivotY * this.scaleY;
+	        }
+	    }]);
+	
+	    return Sprite;
+	}();
+	
+	Sprite.uid = 0;
+	
+	exports.default = Sprite;
+
+/***/ },
+/* 13 */,
+/* 14 */,
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+	
+	var _Sprite2 = __webpack_require__(12);
+	
+	var _Sprite3 = _interopRequireDefault(_Sprite2);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var Rectangle = function (_Sprite) {
+	    _inherits(Rectangle, _Sprite);
+	
+	    function Rectangle(x, y) {
+	        _classCallCheck(this, Rectangle);
+	
+	        var _this = _possibleConstructorReturn(this, (Rectangle.__proto__ || Object.getPrototypeOf(Rectangle)).call(this, x, y));
+	
+	        _this.fill = "#000";
+	        _this.stroke = "";
+	        return _this;
+	    }
+	
+	    _createClass(Rectangle, [{
+	        key: "render",
+	        value: function render(context) {
+	            _get(Rectangle.prototype.__proto__ || Object.getPrototypeOf(Rectangle.prototype), "render", this).call(this, context);
+	
+	            context.beginPath();
+	            context.rect(0, 0, this.width, this.height);
+	
+	            if (this.fill) {
+	                context.fillStyle = this.fill;
+	                context.fill();
+	            }
+	
+	            if (this.stroke) {
+	                context.strokeStyle = this.stroke;
+	                context.stroke();
+	            }
+	        }
+	    }]);
+	
+	    return Rectangle;
+	}(_Sprite3.default);
+	
+	exports.default = Rectangle;
 
 /***/ }
 /******/ ]);

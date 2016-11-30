@@ -39,7 +39,6 @@ export default class Game {
     }
 
     reset () {
-        this.camera = new Camera();
         this.pool.removeAll();
         this.listeners.reset();
 
@@ -61,7 +60,7 @@ export default class Game {
 
         if (this.options.debug) {
             // TODO account for camera
-            drawGrid(context, this.options.width, this.options.height);
+            drawGrid(context, this.camera, this.options.width, this.options.height);
         }
 
         let state = this.fsm.state;

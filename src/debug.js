@@ -1,10 +1,12 @@
 import { getBoundingBox } from "./util";
 
-export const drawGrid = (context, width, height, size=32, color="#000")=> {
-    const halfWidth = width / 2;
-    const halfHeight = height / 2;
-    const linesX = width / size;
-    const linesY = height / size;
+export const drawGrid = (context, camera, width, height, size=32, color="#000")=> {
+    const widthWithCam = width + camera.x;
+    const heightWithCam = height + camera.y;
+    const halfWidth = widthWithCam / 2;
+    const halfHeight = heightWithCam / 2;
+    const linesX = widthWithCam / size;
+    const linesY = heightWithCam / size;
     const count = linesX > linesY ? linesX : linesY;
     let i = -1;
 
@@ -22,14 +24,14 @@ export const drawGrid = (context, width, height, size=32, color="#000")=> {
         context.beginPath();
         
         context.moveTo(-halfWidth, -i * size);
-        context.lineTo(width, -i * size);
+        context.lineTo(widthWithCam, -i * size);
         context.moveTo(-halfWidth, i * size);
-        context.lineTo(width, i * size);
+        context.lineTo(widthWithCam, i * size);
         
         context.moveTo(-i * size, -halfHeight);
-        context.lineTo(-i * size, height);
+        context.lineTo(-i * size, heightWithCam);
         context.moveTo(i * size, -halfHeight);
-        context.lineTo(i * size, height);
+        context.lineTo(i * size, heightWithCam);
         
         context.stroke();
     }
