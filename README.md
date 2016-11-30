@@ -10,10 +10,12 @@ To play with Galaxis in a bare-bones dev environment, run `npm run watch` and mu
 ### Development
 
 Test Galaxis
-`npm run test`
+    
+    npm run test
 
 Lint Galaxis
-`npm run lint`
+    
+    npm run lint
 
 ------------------------------
 Copyright © 2016, Chris Peters
