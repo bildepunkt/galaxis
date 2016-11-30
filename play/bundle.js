@@ -63,9 +63,9 @@
 	        preload: ["assets/cragger.png"],
 	
 	        init: function init() {
-	            this.bgColor = "#789";
+	            var _this = this;
 	
-	            this.game.camera.x = 64;
+	            this.bgColor = "#789";
 	
 	            this.rect = new _Rectangle2.default(64, 64);
 	            this.rect.pivotX = 32;
@@ -92,15 +92,15 @@
 	            this.game.pool.add(this.rect, this.rect2, this.rect3);
 	
 	            this.game.listeners.add("click", function (e) {
-	                console.log((0, _util.getBoundingBox)(e.target));
+	                console.log((0, _util.getBoundingBox)(e.target, _this.game.camera));
 	            }, this.rect);
 	
 	            this.game.listeners.add("drag", function (e) {
-	                console.log((0, _util.getBoundingBox)(e.target));
+	                console.log((0, _util.getBoundingBox)(e.target, _this.game.camera));
 	            }, this.rect2);
 	
 	            this.game.listeners.add("mousemove", function (e) {
-	                console.log((0, _util.getBoundingBox)(e.target));
+	                console.log((0, _util.getBoundingBox)(e.target, _this.game.camera));
 	            }, this.rect3);
 	        },
 	        update: function update(delta) {
@@ -111,7 +111,9 @@
 	            //this.rect.x += speed;
 	            //this.rect.rotation += speed;
 	
-	            if ((0, _util.getBoundingBox)(this.rect).maxX >= this.game.width) {
+	            this.game.camera.x += 1;
+	
+	            if ((0, _util.getBoundingBox)(this.rect, this.game.camera).maxX >= this.game.width) {
 	                this.game.fsm.load("play");
 	            }
 	        },
@@ -123,13 +125,13 @@
 	    },
 	    play: {
 	        init: function init() {
-	            var _this = this;
+	            var _this2 = this;
 	
 	            console.log("play#init");
 	            console.log(this.game.listeners);
 	
 	            this.game.listeners.add("click", function () {
-	                _this.game.reset();
+	                _this2.game.reset();
 	            });
 	        },
 	        update: function update(delta) {
@@ -642,10 +644,12 @@
 	
 	// TODO account for camera
 	var getBoundingBox = exports.getBoundingBox = function getBoundingBox(item) {
+	    var camera = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { x: 0, y: 0 };
+	
 	    var w = item.width * Math.abs(item.scaleX);
 	    var h = item.height * Math.abs(item.scaleY);
-	    var x1 = item.globalX;
-	    var y1 = item.globalY;
+	    var x1 = item.globalX - camera.x;
+	    var y1 = item.globalY - camera.y;
 	    var x2 = item.scaleX >= 0 ? x1 + w : x1 - w;
 	    var y2 = item.scaleY >= 0 ? y1 + h : y1 - h;
 	
@@ -657,8 +661,8 @@
 	    };
 	};
 	
-	var pointRectCollide = exports.pointRectCollide = function pointRectCollide(x, y, rect) {
-	    var bb = getBoundingBox(rect);
+	var pointRectCollide = exports.pointRectCollide = function pointRectCollide(x, y, rect, camera) {
+	    var bb = getBoundingBox(rect, camera);
 	    return x >= bb.minX && x <= bb.maxX && y >= bb.minY && y <= bb.maxY;
 	};
 	
@@ -1007,6 +1011,8 @@
 	    _createClass(Input, [{
 	        key: "handleEvents",
 	        value: function handleEvents(e) {
+	            var _this = this;
+	
 	            e.preventDefault();
 	            e.stopPropagation();
 	
@@ -1038,13 +1044,9 @@
 	                event.x = Math.floor((event.x - (boundingRect.left + window.scrollX)) * scaleFactor);
 	                event.y = Math.floor((event.y - (boundingRect.top + window.scrollY)) * scaleFactor);
 	
-	                // TODO is this sustainable as opposed to offsetting items bounding box with camera?
-	                event.x += this.camera.x;
-	                event.y += this.camera.y;
-	
 	                // find and set target object
 	                this.pool.each(function (item) {
-	                    if ((0, _util.pointRectCollide)(event.x, event.y, item)) {
+	                    if ((0, _util.pointRectCollide)(event.x, event.y, item, _this.camera)) {
 	                        event.target = item;
 	                        // don't break, we want the last-most (highest) item
 	                    }

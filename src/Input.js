@@ -161,13 +161,9 @@ export default class Input {
             event.x = Math.floor((event.x - (boundingRect.left + window.scrollX)) * scaleFactor);
             event.y = Math.floor((event.y - (boundingRect.top + window.scrollY)) * scaleFactor);
 
-            // TODO is this sustainable as opposed to offsetting items bounding box with camera?
-            event.x += this.camera.x;
-            event.y += this.camera.y;
-
             // find and set target object
             this.pool.each((item)=> {
-                if (pointRectCollide(event.x, event.y, item)) {
+                if (pointRectCollide(event.x, event.y, item, this.camera)) {
                     event.target = item;
                     // don't break, we want the last-most (highest) item
                 }

@@ -11,8 +11,6 @@ new Game({
         init () {
             this.bgColor = "#789";
 
-            this.game.camera.x = 64;
-
             this.rect = new Rectangle(64, 64);
             this.rect.pivotX = 32;
             this.rect.pivotY = 32;
@@ -38,15 +36,15 @@ new Game({
             this.game.pool.add(this.rect, this.rect2, this.rect3);
 
             this.game.listeners.add("click", (e)=> {
-                console.log(getBoundingBox(e.target));
+                console.log(getBoundingBox(e.target, this.game.camera));
             }, this.rect);
 
             this.game.listeners.add("drag", (e)=> {
-                console.log(getBoundingBox(e.target));
+                console.log(getBoundingBox(e.target, this.game.camera));
             }, this.rect2);
 
             this.game.listeners.add("mousemove", (e)=> {
-                console.log(getBoundingBox(e.target));
+                console.log(getBoundingBox(e.target, this.game.camera));
             }, this.rect3);
         },
 
@@ -58,7 +56,9 @@ new Game({
             //this.rect.x += speed;
             //this.rect.rotation += speed;
 
-            if (getBoundingBox(this.rect).maxX >= this.game.width) {
+            this.game.camera.x += 1;
+
+            if (getBoundingBox(this.rect, this.game.camera).maxX >= this.game.width) {
                 this.game.fsm.load("play");
             }
         },
